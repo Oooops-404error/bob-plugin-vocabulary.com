@@ -12,23 +12,25 @@
  */
 
 var items = [
-    ['auto', 'xxx'],
-    ['zh-Hans', 'xxx'],
-    ['zh-Hant', 'xxx'],
-    ['en', 'xxx'],
+    ['en', 'en'],
 ];
 
 var langMap = new Map(items);
 var langMapReverse = new Map(items.map(([standardLang, lang]) => [lang, standardLang]));
 
 function supportLanguages() {
-    return items.map(([standardLang, lang]) => standardLang);
+    return ["en"];
 }
 
-function translate(query, completion) {
-    // 翻译成功
-    // completion({'result': result});
-    
-    // 翻译失败
-    // completion({'error': error});    
+function translate(query) {
+    if (!(query.detectTo === "en")) {
+        query.onCompletion({
+            error: {
+                type: "unsupportedLanguage",
+                message: "This language is not supported",
+            },
+        });
+    }else{
+
+    }
 }
