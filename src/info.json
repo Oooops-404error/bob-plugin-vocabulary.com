@@ -1,13 +1,13 @@
 {
-    "identifier": "请修改",
-    "version": "0.1.0",
+    "identifier": "com.oooops.404error.vocabulary.translate",
     "category": "translate",
-    "name": "请修改",
-    "summary": "",
-    "icon": "",
-    "author": "",
-    "homepage": "",
+    "version": "0.0.1",
+    "name": "Vocabulary",
+    "summary": "Awesome tool for learning words",
+    "author": "Oooops-404error",
     "appcast": "",
-    "minBobVersion": "0.5.0",
+    "homepage": "",
+    "icon": "icon.png",
+    "minBobVersion": "1.8.0",
     "options": []
 }
