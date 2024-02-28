@@ -22,6 +22,50 @@ function supportLanguages() {
     return ["en"];
 }
 
+function getParts(data) {
+    return []
+}
+
+function getExchanges(data) {
+    return[]
+}
+
+function parseResult(query, data) {
+    const match = data.match(/We couldn't find any matches for/);
+    if (match) {
+        query.onCompletion({
+            error: {
+                type: "notFound",
+                message: "No results found",
+            },
+        });
+    }else {
+        return{
+            word: "word",
+            phonetics: getPhonetics(data),
+            parts: getParts(data),
+            exchanges: getExchanges(data)
+        }
+    }
+}
+
+function getPhonetics(data){
+    const match = [...data.match(/<span style="white-space:nowrap;"><h3>(.*?)<\/h3>/g)];
+    if (match) {
+        return [
+            {
+                type: "us",
+                value: match[0][1],
+            },
+            {
+                type: "uk",
+                value: match[1][1],
+            },
+        ]
+    }
+    return [{type: "us", value: "None"}, {type: "uk", value: "None"}];
+}
+
 function translate(query) {
     if (!(query.detectTo === "en")) {
         query.onCompletion({
@@ -31,6 +75,20 @@ function translate(query) {
             },
         });
     }else{
-
+        const apiUrl = `https://www.vocabulary.com/dictionary/definition.ajax?search=${query.text}&lang=en`;
+        $http.request({
+            method: "GET",
+            url: apiUrl,
+            handler: function(resp) {
+                const dict = parseResult(query, resp.data);
+                query.onCompletion({
+                    result: {
+                        from: query.detectFrom,
+                        to: query.detectTo,
+                        toDict: dict
+                    },
+                });
+            }
+        });
     }
 }
