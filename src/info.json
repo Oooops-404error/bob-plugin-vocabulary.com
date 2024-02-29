@@ -1,13 +1,10 @@
 {
     "identifier": "com.oooops.404error.vocabulary.translate",
+    "version": "1.0.1",
     "category": "translate",
-    "version": "0.0.1",
     "name": "Vocabulary",
-    "summary": "Awesome tool for learning words",
     "author": "Oooops-404error",
-    "appcast": "",
-    "homepage": "",
-    "icon": "icon.png",
-    "minBobVersion": "1.8.0",
-    "options": []
+    "summary": "A powerful English-English dictionary using vocabulary.com",
+    "homepage": "https://github.com/Oooops-404error/bob-plugin-vocabulary.com",
+    "minBobVersion": "1.8.0"
 }
