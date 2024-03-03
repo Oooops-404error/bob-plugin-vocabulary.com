@@ -34,7 +34,6 @@ Bob 是一款 macOS 平台的 翻译 和 OCR 软件。
 1. 安装 Bob 软件
 2. Release 中下载以 bobplugin 结尾的文件
 3. 双击安装
-4. 目前需要设置目标语言为 English 才能使用
 
 ## 开发
 1. fork 本项目
