@@ -71,17 +71,33 @@ function getAdditions($) {
     }]
 }
 
-function getPhonetics($) {
+function getPhonetics($: CheerioAPI, word: string) {
     const usPhonetics = $('html > body > div > div > div:first-child > div:first-child > div:first-child > div:first-child > div > div:first-child > span > h3').text()
     const ukPhonetics = $('html > body > div > div > div:first-child > div:first-child > div:first-child > div:first-child > div > div:nth-child(2) > span > h3').text()
     return [
-        { type: "us", value: usPhonetics, },
-        { type: "uk", value: ukPhonetics, },
+        {
+            type: "us",
+            value: usPhonetics,
+            tts: {
+                type: "url",
+                value: `https://dict.youdao.com/dictvoice?audio=${word}&type=2` // TTS URL for US pronunciation
+            },
+        },
+        {
+            type: "uk",
+            value: ukPhonetics,
+            tts: {
+                type: "url",
+                value: `https://dict.youdao.com/dictvoice?audio=${word}&type=1` // TTS URL for UK pronunciation
+            },
+        },
     ]
+
 }
 
 function parseResult(query, data) {
     const $ = load(data);
+    const word = query.text; // Assuming this is the word you're querying
     if ($('.wordnotfound-wrapper').length > 0) {
         query.onCompletion({
             error: {
@@ -91,8 +107,8 @@ function parseResult(query, data) {
         });
     } else {
         return {
-            word: query.text,
-            phonetics: getPhonetics($),
+            word: word,
+            phonetics: getPhonetics($, word),
             parts: getParts($),
             exchanges: getExchanges($),
             relatedWordParts: getRelatedWordParts(),
@@ -100,7 +116,6 @@ function parseResult(query, data) {
         }
     }
 }
-
 function supportLanguages() {
     return ['auto', 'en', 'zh-Hans'];
 }

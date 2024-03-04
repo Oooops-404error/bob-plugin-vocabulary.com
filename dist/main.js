@@ -19509,16 +19509,31 @@ function getAdditions($2) {
     value: long
   }];
 }
-function getPhonetics($2) {
+function getPhonetics($2, word) {
   const usPhonetics = $2("html > body > div > div > div:first-child > div:first-child > div:first-child > div:first-child > div > div:first-child > span > h3").text();
   const ukPhonetics = $2("html > body > div > div > div:first-child > div:first-child > div:first-child > div:first-child > div > div:nth-child(2) > span > h3").text();
   return [
-    { type: "us", value: usPhonetics },
-    { type: "uk", value: ukPhonetics }
+    {
+      type: "us",
+      value: usPhonetics,
+      tts: {
+        type: "url",
+        value: `https://dict.youdao.com/dictvoice?audio=${word}&type=2`
+      }
+    },
+    {
+      type: "uk",
+      value: ukPhonetics,
+      tts: {
+        type: "url",
+        value: `https://dict.youdao.com/dictvoice?audio=${word}&type=1`
+      }
+    }
   ];
 }
 function parseResult(query, data2) {
   const $2 = load(data2);
+  const word = query.text;
   if ($2(".wordnotfound-wrapper").length > 0) {
     query.onCompletion({
       error: {
@@ -19528,8 +19543,8 @@ function parseResult(query, data2) {
     });
   } else {
     return {
-      word: query.text,
-      phonetics: getPhonetics($2),
+      word,
+      phonetics: getPhonetics($2, word),
       parts: getParts($2),
       exchanges: getExchanges($2),
       relatedWordParts: getRelatedWordParts(),
