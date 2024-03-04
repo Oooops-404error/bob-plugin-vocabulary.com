@@ -2,6 +2,14 @@
   "identifier": "com.oooops.404error.vocabulary.translate",
   "versions": [
     {
+      "version": "1.0.4",
+      "desc": "见 https://github.com/Oooops-404error/bob-plugin-vocabulary.com/releases",
+      "sha256": "43d703c77fc92bb7fe79a0fa0b36f18ce61b5b9cef2c5017530fdbe01a54ea22",
+      "url": "https://github.com/Oooops-404error/bob-plugin-vocabulary.com/releases/download/v1.0.4/bob-plugin-vocabulary.com@1.0.4.bobplugin",
+      "minBobVersion": "1.8.0",
+      "timestamp": 1709566265814
+    },
+    {
       "version": "1.0.3",
       "desc": "见 https://github.com/Oooops-404error/bob-plugin-vocabulary.com/releases",
       "sha256": "b67ac4b9971ca51774011becda271f3fba6b230cadb1849d6ceb73b21b8b135b",
