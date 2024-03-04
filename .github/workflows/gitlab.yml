@@ -1,0 +1,18 @@
+name: GitLab
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Push to GitLab
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+        run: |
+          git remote add gitlab https://oauth2:${GITLAB_TOKEN}@gitlab.com:bob4043209/bob-plugin-vocabulary.com.git
+          git push gitlab main:main
