@@ -34,4 +34,12 @@ Bob 是一款 macOS 平台的 翻译 和 OCR 软件。
 1. 安装 Bob 软件
 2. Release 中下载以 bobplugin 结尾的文件
 3. 双击安装
-4. 目前需要设置目标语言为 English 才能使用
+
+## 开发
+1. fork 本项目
+2. git clone 你的 fork repo
+3. cd 到项目目录
+4. 执行 `npm install`
+5. 修改代码
+6. 编译成 bob 插件 `node build.js` (在release目录下生成 bobplugin 文件)
+7. 调试: [Bob 文档](https://bobtranslate.com/plugin/quickstart/debug.html)

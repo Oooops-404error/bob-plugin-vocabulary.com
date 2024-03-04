@@ -1,0 +1,8 @@
+# directories
+.history/
+node_modules/
+release/
+
+# files
+.DS_Store
+package-lock.json

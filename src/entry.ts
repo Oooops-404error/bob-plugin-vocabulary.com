@@ -1,41 +1,43 @@
 import * as Bob from "@bob-plug/core";
-import { load, CheerioAPI} from 'cheerio';
+import { load, CheerioAPI } from 'cheerio';
 
 function translate(query) {
-    if (!(query.detectTo === "en")) {
+    if (query.detectFrom != "en") {
         query.onCompletion({
             error: {
                 type: "unsupportedLanguage",
                 message: "This language is not supported",
             },
         });
-    } else {
-        const apiUrl = `https://www.vocabulary.com/dictionary/definition.ajax?search=${query.text}&lang=en`;
-        Bob.api.$http.get({
-            url: apiUrl,
-            handler: (resp) => {
-                const dict = parseResult(query, resp.data);
-                query.onCompletion({
-                    result: {
-                        toDict: dict
-                    },
-                });
-            }
-        });
+        return;
     }
+    const apiUrl = `https://www.vocabulary.com/dictionary/definition.ajax?search=${query.text}&lang=en`;
+    Bob.api.$http.get({
+        url: apiUrl,
+        handler: (resp) => {
+            const dict = parseResult(query, resp.data);
+            query.onCompletion({
+                result: {
+                    toDict: dict
+                },
+            });
+        }
+    });
+
 }
 
 function getParts($: CheerioAPI) {
-    const results = [];
-    $('body > div > div > div:first-child > div:first-child > div:first-child > div:nth-child(2) > ol > li').each(function() {
+    const results: { part: string; means: string[] }[] = [];
+    $('body > div > div > div:first-child > div:first-child > div:first-child > div:nth-child(2) > ol > li').each(function () {
         const div = $(this).find('div').first();
         const divText = div.find("div").text().trim();
-        const siblingText = div.contents().filter(function() {
+        const siblingText = div.contents().filter(function () {
             return this.type === 'text';
         }).text().trim();
         results.push({
             part: divText,
-            means: [siblingText]});
+            means: [siblingText]
+        });
     });
     return results;
 }
@@ -43,7 +45,7 @@ function getParts($: CheerioAPI) {
 function getExchanges($) {
     const forms = $('html > body > div > div > div:first-child > div:first-child >  div:first-child > div:first-child > p:nth-of-type(1) > b').text().trim();
     const words = forms.split(';').map((s: string) => s.trim());
-    return[{
+    return [{
         name: "Other forms",
         words: words
     }]
@@ -66,16 +68,16 @@ function getAdditions($) {
     }, {
         name: "long explanation",
         value: long
-        }]
+    }]
 }
 
-function getPhonetics($){
+function getPhonetics($) {
     const usPhonetics = $('html > body > div > div > div:first-child > div:first-child > div:first-child > div:first-child > div > div:first-child > span > h3').text()
     const ukPhonetics = $('html > body > div > div > div:first-child > div:first-child > div:first-child > div:first-child > div > div:nth-child(2) > span > h3').text()
     return [
-            {type: "us", value: usPhonetics,},
-            {type: "uk", value: ukPhonetics,},
-        ]
+        { type: "us", value: usPhonetics, },
+        { type: "uk", value: ukPhonetics, },
+    ]
 }
 
 function parseResult(query, data) {
@@ -87,8 +89,8 @@ function parseResult(query, data) {
                 message: `words are illegal`,
             },
         });
-    }else {
-        return{
+    } else {
+        return {
             word: query.text,
             phonetics: getPhonetics($),
             parts: getParts($),
@@ -100,5 +102,5 @@ function parseResult(query, data) {
 }
 
 function supportLanguages() {
-    return ['auto', 'en'];
+    return ['auto', 'en', 'zh-Hans'];
 }
