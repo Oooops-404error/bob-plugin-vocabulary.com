@@ -17,6 +17,20 @@ const INFO_JSON = {
     summary: "A powerful English-English dictionary using vocabulary.com",
     homepage: "https://github.com/Oooops-404error/bob-plugin-vocabulary.com",
     minBobVersion: "1.8.0",
+    options:[{
+        identifier: "ttsType",
+        type: "menu",
+        title: "选择发音来源",
+        defaultValue: "google",
+        menuValues: [{
+            title: "google",
+            value: "google"
+        },{
+            title: "有道",
+            value: "youDao"
+        }],
+        desc: "可选的发音来源，默认为google"
+    }],
     appcast: "https://raw.githubusercontent.com/Oooops-404error/bob-plugin-vocabulary.com/main/appcast.json"
 };
 

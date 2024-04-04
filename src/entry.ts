@@ -1,5 +1,5 @@
-import * as Bob from "@bob-plug/core";
 import { load, CheerioAPI } from 'cheerio';
+import { api } from "@bob-plug/core";
 
 function translate(query) {
     if (query.detectFrom != "en") {
@@ -12,7 +12,7 @@ function translate(query) {
         return;
     }
     const apiUrl = `https://www.vocabulary.com/dictionary/definition.ajax?search=${query.text}&lang=en`;
-    Bob.api.$http.get({
+        api.$http.get({
         url: apiUrl,
         handler: (resp) => {
             const dict = parseResult(query, resp.data);
@@ -80,7 +80,7 @@ function getPhonetics($: CheerioAPI, word: string) {
             value: usPhonetics,
             tts: {
                 type: "url",
-                value: `https://dict.youdao.com/dictvoice?audio=${word}&type=2` // TTS URL for US pronunciation
+                value: ttsSelector("us", word) // TTS URL for US pronunciation
             },
         },
         {
@@ -88,11 +88,34 @@ function getPhonetics($: CheerioAPI, word: string) {
             value: ukPhonetics,
             tts: {
                 type: "url",
-                value: `https://dict.youdao.com/dictvoice?audio=${word}&type=1` // TTS URL for UK pronunciation
+                value: ttsSelector("uk", word) // TTS URL for UK pronunciation
             },
         },
     ]
 
+}
+
+function ttsSelector(type: string, word: string) {
+    const source = api.getOption("ttsType");
+    if (type == "us") {
+        switch (source) {
+            case "google":
+                return `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${word}}`;
+            case "youDao":
+                return `https://dict.youdao.com/dictvoice?audio=${word}&type=2`;
+            default:
+                return `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${word}}`;
+        }
+    }else if (type == "uk"){
+        switch (source) {
+            case "google":
+                return `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-uk&q=${word}`;
+            case "youDao":
+                return `https://dict.youdao.com/dictvoice?audio=${word}&type=1`;
+            default:
+                return `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-uk&q=${word}`;
+        }
+    }
 }
 
 function parseResult(query, data) {

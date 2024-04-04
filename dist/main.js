@@ -21,6 +21,573 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target, mod));
 
+// node_modules/css-what/lib/commonjs/types.js
+var require_types = __commonJS({
+  "node_modules/css-what/lib/commonjs/types.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.AttributeAction = exports.IgnoreCaseMode = exports.SelectorType = void 0;
+    var SelectorType5;
+    (function(SelectorType6) {
+      SelectorType6["Attribute"] = "attribute";
+      SelectorType6["Pseudo"] = "pseudo";
+      SelectorType6["PseudoElement"] = "pseudo-element";
+      SelectorType6["Tag"] = "tag";
+      SelectorType6["Universal"] = "universal";
+      SelectorType6["Adjacent"] = "adjacent";
+      SelectorType6["Child"] = "child";
+      SelectorType6["Descendant"] = "descendant";
+      SelectorType6["Parent"] = "parent";
+      SelectorType6["Sibling"] = "sibling";
+      SelectorType6["ColumnCombinator"] = "column-combinator";
+    })(SelectorType5 = exports.SelectorType || (exports.SelectorType = {}));
+    exports.IgnoreCaseMode = {
+      Unknown: null,
+      QuirksMode: "quirks",
+      IgnoreCase: true,
+      CaseSensitive: false
+    };
+    var AttributeAction2;
+    (function(AttributeAction3) {
+      AttributeAction3["Any"] = "any";
+      AttributeAction3["Element"] = "element";
+      AttributeAction3["End"] = "end";
+      AttributeAction3["Equals"] = "equals";
+      AttributeAction3["Exists"] = "exists";
+      AttributeAction3["Hyphen"] = "hyphen";
+      AttributeAction3["Not"] = "not";
+      AttributeAction3["Start"] = "start";
+    })(AttributeAction2 = exports.AttributeAction || (exports.AttributeAction = {}));
+  }
+});
+
+// node_modules/css-what/lib/commonjs/parse.js
+var require_parse = __commonJS({
+  "node_modules/css-what/lib/commonjs/parse.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.parse = exports.isTraversal = void 0;
+    var types_1 = require_types();
+    var reName = /^[^\\#]?(?:\\(?:[\da-f]{1,6}\s?|.)|[\w\-\u00b0-\uFFFF])+/;
+    var reEscape = /\\([\da-f]{1,6}\s?|(\s)|.)/gi;
+    var actionTypes = /* @__PURE__ */ new Map([
+      [126, types_1.AttributeAction.Element],
+      [94, types_1.AttributeAction.Start],
+      [36, types_1.AttributeAction.End],
+      [42, types_1.AttributeAction.Any],
+      [33, types_1.AttributeAction.Not],
+      [124, types_1.AttributeAction.Hyphen]
+    ]);
+    var unpackPseudos = /* @__PURE__ */ new Set([
+      "has",
+      "not",
+      "matches",
+      "is",
+      "where",
+      "host",
+      "host-context"
+    ]);
+    function isTraversal3(selector) {
+      switch (selector.type) {
+        case types_1.SelectorType.Adjacent:
+        case types_1.SelectorType.Child:
+        case types_1.SelectorType.Descendant:
+        case types_1.SelectorType.Parent:
+        case types_1.SelectorType.Sibling:
+        case types_1.SelectorType.ColumnCombinator:
+          return true;
+        default:
+          return false;
+      }
+    }
+    exports.isTraversal = isTraversal3;
+    var stripQuotesFromPseudos = /* @__PURE__ */ new Set(["contains", "icontains"]);
+    function funescape(_, escaped, escapedWhitespace) {
+      var high = parseInt(escaped, 16) - 65536;
+      return high !== high || escapedWhitespace ? escaped : high < 0 ? String.fromCharCode(high + 65536) : String.fromCharCode(high >> 10 | 55296, high & 1023 | 56320);
+    }
+    function unescapeCSS(str) {
+      return str.replace(reEscape, funescape);
+    }
+    function isQuote(c) {
+      return c === 39 || c === 34;
+    }
+    function isWhitespace3(c) {
+      return c === 32 || c === 9 || c === 10 || c === 12 || c === 13;
+    }
+    function parse8(selector) {
+      var subselects2 = [];
+      var endIndex = parseSelector(subselects2, "".concat(selector), 0);
+      if (endIndex < selector.length) {
+        throw new Error("Unmatched selector: ".concat(selector.slice(endIndex)));
+      }
+      return subselects2;
+    }
+    exports.parse = parse8;
+    function parseSelector(subselects2, selector, selectorIndex) {
+      var tokens = [];
+      function getName2(offset) {
+        var match = selector.slice(selectorIndex + offset).match(reName);
+        if (!match) {
+          throw new Error("Expected name, found ".concat(selector.slice(selectorIndex)));
+        }
+        var name = match[0];
+        selectorIndex += offset + name.length;
+        return unescapeCSS(name);
+      }
+      function stripWhitespace(offset) {
+        selectorIndex += offset;
+        while (selectorIndex < selector.length && isWhitespace3(selector.charCodeAt(selectorIndex))) {
+          selectorIndex++;
+        }
+      }
+      function readValueWithParenthesis() {
+        selectorIndex += 1;
+        var start = selectorIndex;
+        var counter = 1;
+        for (; counter > 0 && selectorIndex < selector.length; selectorIndex++) {
+          if (selector.charCodeAt(selectorIndex) === 40 && !isEscaped(selectorIndex)) {
+            counter++;
+          } else if (selector.charCodeAt(selectorIndex) === 41 && !isEscaped(selectorIndex)) {
+            counter--;
+          }
+        }
+        if (counter) {
+          throw new Error("Parenthesis not matched");
+        }
+        return unescapeCSS(selector.slice(start, selectorIndex - 1));
+      }
+      function isEscaped(pos) {
+        var slashCount = 0;
+        while (selector.charCodeAt(--pos) === 92)
+          slashCount++;
+        return (slashCount & 1) === 1;
+      }
+      function ensureNotTraversal() {
+        if (tokens.length > 0 && isTraversal3(tokens[tokens.length - 1])) {
+          throw new Error("Did not expect successive traversals.");
+        }
+      }
+      function addTraversal(type) {
+        if (tokens.length > 0 && tokens[tokens.length - 1].type === types_1.SelectorType.Descendant) {
+          tokens[tokens.length - 1].type = type;
+          return;
+        }
+        ensureNotTraversal();
+        tokens.push({ type });
+      }
+      function addSpecialAttribute(name, action2) {
+        tokens.push({
+          type: types_1.SelectorType.Attribute,
+          name,
+          action: action2,
+          value: getName2(1),
+          namespace: null,
+          ignoreCase: "quirks"
+        });
+      }
+      function finalizeSubselector() {
+        if (tokens.length && tokens[tokens.length - 1].type === types_1.SelectorType.Descendant) {
+          tokens.pop();
+        }
+        if (tokens.length === 0) {
+          throw new Error("Empty sub-selector");
+        }
+        subselects2.push(tokens);
+      }
+      stripWhitespace(0);
+      if (selector.length === selectorIndex) {
+        return selectorIndex;
+      }
+      loop:
+        while (selectorIndex < selector.length) {
+          var firstChar = selector.charCodeAt(selectorIndex);
+          switch (firstChar) {
+            case 32:
+            case 9:
+            case 10:
+            case 12:
+            case 13: {
+              if (tokens.length === 0 || tokens[0].type !== types_1.SelectorType.Descendant) {
+                ensureNotTraversal();
+                tokens.push({ type: types_1.SelectorType.Descendant });
+              }
+              stripWhitespace(1);
+              break;
+            }
+            case 62: {
+              addTraversal(types_1.SelectorType.Child);
+              stripWhitespace(1);
+              break;
+            }
+            case 60: {
+              addTraversal(types_1.SelectorType.Parent);
+              stripWhitespace(1);
+              break;
+            }
+            case 126: {
+              addTraversal(types_1.SelectorType.Sibling);
+              stripWhitespace(1);
+              break;
+            }
+            case 43: {
+              addTraversal(types_1.SelectorType.Adjacent);
+              stripWhitespace(1);
+              break;
+            }
+            case 46: {
+              addSpecialAttribute("class", types_1.AttributeAction.Element);
+              break;
+            }
+            case 35: {
+              addSpecialAttribute("id", types_1.AttributeAction.Equals);
+              break;
+            }
+            case 91: {
+              stripWhitespace(1);
+              var name_1 = void 0;
+              var namespace = null;
+              if (selector.charCodeAt(selectorIndex) === 124) {
+                name_1 = getName2(1);
+              } else if (selector.startsWith("*|", selectorIndex)) {
+                namespace = "*";
+                name_1 = getName2(2);
+              } else {
+                name_1 = getName2(0);
+                if (selector.charCodeAt(selectorIndex) === 124 && selector.charCodeAt(selectorIndex + 1) !== 61) {
+                  namespace = name_1;
+                  name_1 = getName2(1);
+                }
+              }
+              stripWhitespace(0);
+              var action = types_1.AttributeAction.Exists;
+              var possibleAction = actionTypes.get(selector.charCodeAt(selectorIndex));
+              if (possibleAction) {
+                action = possibleAction;
+                if (selector.charCodeAt(selectorIndex + 1) !== 61) {
+                  throw new Error("Expected `=`");
+                }
+                stripWhitespace(2);
+              } else if (selector.charCodeAt(selectorIndex) === 61) {
+                action = types_1.AttributeAction.Equals;
+                stripWhitespace(1);
+              }
+              var value = "";
+              var ignoreCase = null;
+              if (action !== "exists") {
+                if (isQuote(selector.charCodeAt(selectorIndex))) {
+                  var quote = selector.charCodeAt(selectorIndex);
+                  var sectionEnd = selectorIndex + 1;
+                  while (sectionEnd < selector.length && (selector.charCodeAt(sectionEnd) !== quote || isEscaped(sectionEnd))) {
+                    sectionEnd += 1;
+                  }
+                  if (selector.charCodeAt(sectionEnd) !== quote) {
+                    throw new Error("Attribute value didn't end");
+                  }
+                  value = unescapeCSS(selector.slice(selectorIndex + 1, sectionEnd));
+                  selectorIndex = sectionEnd + 1;
+                } else {
+                  var valueStart = selectorIndex;
+                  while (selectorIndex < selector.length && (!isWhitespace3(selector.charCodeAt(selectorIndex)) && selector.charCodeAt(selectorIndex) !== 93 || isEscaped(selectorIndex))) {
+                    selectorIndex += 1;
+                  }
+                  value = unescapeCSS(selector.slice(valueStart, selectorIndex));
+                }
+                stripWhitespace(0);
+                var forceIgnore = selector.charCodeAt(selectorIndex) | 32;
+                if (forceIgnore === 115) {
+                  ignoreCase = false;
+                  stripWhitespace(1);
+                } else if (forceIgnore === 105) {
+                  ignoreCase = true;
+                  stripWhitespace(1);
+                }
+              }
+              if (selector.charCodeAt(selectorIndex) !== 93) {
+                throw new Error("Attribute selector didn't terminate");
+              }
+              selectorIndex += 1;
+              var attributeSelector = {
+                type: types_1.SelectorType.Attribute,
+                name: name_1,
+                action,
+                value,
+                namespace,
+                ignoreCase
+              };
+              tokens.push(attributeSelector);
+              break;
+            }
+            case 58: {
+              if (selector.charCodeAt(selectorIndex + 1) === 58) {
+                tokens.push({
+                  type: types_1.SelectorType.PseudoElement,
+                  name: getName2(2).toLowerCase(),
+                  data: selector.charCodeAt(selectorIndex) === 40 ? readValueWithParenthesis() : null
+                });
+                continue;
+              }
+              var name_2 = getName2(1).toLowerCase();
+              var data2 = null;
+              if (selector.charCodeAt(selectorIndex) === 40) {
+                if (unpackPseudos.has(name_2)) {
+                  if (isQuote(selector.charCodeAt(selectorIndex + 1))) {
+                    throw new Error("Pseudo-selector ".concat(name_2, " cannot be quoted"));
+                  }
+                  data2 = [];
+                  selectorIndex = parseSelector(data2, selector, selectorIndex + 1);
+                  if (selector.charCodeAt(selectorIndex) !== 41) {
+                    throw new Error("Missing closing parenthesis in :".concat(name_2, " (").concat(selector, ")"));
+                  }
+                  selectorIndex += 1;
+                } else {
+                  data2 = readValueWithParenthesis();
+                  if (stripQuotesFromPseudos.has(name_2)) {
+                    var quot = data2.charCodeAt(0);
+                    if (quot === data2.charCodeAt(data2.length - 1) && isQuote(quot)) {
+                      data2 = data2.slice(1, -1);
+                    }
+                  }
+                  data2 = unescapeCSS(data2);
+                }
+              }
+              tokens.push({ type: types_1.SelectorType.Pseudo, name: name_2, data: data2 });
+              break;
+            }
+            case 44: {
+              finalizeSubselector();
+              tokens = [];
+              stripWhitespace(1);
+              break;
+            }
+            default: {
+              if (selector.startsWith("/*", selectorIndex)) {
+                var endIndex = selector.indexOf("*/", selectorIndex + 2);
+                if (endIndex < 0) {
+                  throw new Error("Comment was not terminated");
+                }
+                selectorIndex = endIndex + 2;
+                if (tokens.length === 0) {
+                  stripWhitespace(0);
+                }
+                break;
+              }
+              var namespace = null;
+              var name_3 = void 0;
+              if (firstChar === 42) {
+                selectorIndex += 1;
+                name_3 = "*";
+              } else if (firstChar === 124) {
+                name_3 = "";
+                if (selector.charCodeAt(selectorIndex + 1) === 124) {
+                  addTraversal(types_1.SelectorType.ColumnCombinator);
+                  stripWhitespace(2);
+                  break;
+                }
+              } else if (reName.test(selector.slice(selectorIndex))) {
+                name_3 = getName2(0);
+              } else {
+                break loop;
+              }
+              if (selector.charCodeAt(selectorIndex) === 124 && selector.charCodeAt(selectorIndex + 1) !== 124) {
+                namespace = name_3;
+                if (selector.charCodeAt(selectorIndex + 1) === 42) {
+                  name_3 = "*";
+                  selectorIndex += 2;
+                } else {
+                  name_3 = getName2(1);
+                }
+              }
+              tokens.push(name_3 === "*" ? { type: types_1.SelectorType.Universal, namespace } : { type: types_1.SelectorType.Tag, name: name_3, namespace });
+            }
+          }
+        }
+      finalizeSubselector();
+      return selectorIndex;
+    }
+  }
+});
+
+// node_modules/css-what/lib/commonjs/stringify.js
+var require_stringify = __commonJS({
+  "node_modules/css-what/lib/commonjs/stringify.js"(exports) {
+    "use strict";
+    var __spreadArray = exports && exports.__spreadArray || function(to, from, pack) {
+      if (pack || arguments.length === 2)
+        for (var i = 0, l = from.length, ar; i < l; i++) {
+          if (ar || !(i in from)) {
+            if (!ar)
+              ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+          }
+        }
+      return to.concat(ar || Array.prototype.slice.call(from));
+    };
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.stringify = void 0;
+    var types_1 = require_types();
+    var attribValChars = ["\\", '"'];
+    var pseudoValChars = __spreadArray(__spreadArray([], attribValChars, true), ["(", ")"], false);
+    var charsToEscapeInAttributeValue = new Set(attribValChars.map(function(c) {
+      return c.charCodeAt(0);
+    }));
+    var charsToEscapeInPseudoValue = new Set(pseudoValChars.map(function(c) {
+      return c.charCodeAt(0);
+    }));
+    var charsToEscapeInName = new Set(__spreadArray(__spreadArray([], pseudoValChars, true), [
+      "~",
+      "^",
+      "$",
+      "*",
+      "+",
+      "!",
+      "|",
+      ":",
+      "[",
+      "]",
+      " ",
+      "."
+    ], false).map(function(c) {
+      return c.charCodeAt(0);
+    }));
+    function stringify2(selector) {
+      return selector.map(function(token) {
+        return token.map(stringifyToken).join("");
+      }).join(", ");
+    }
+    exports.stringify = stringify2;
+    function stringifyToken(token, index2, arr) {
+      switch (token.type) {
+        case types_1.SelectorType.Child:
+          return index2 === 0 ? "> " : " > ";
+        case types_1.SelectorType.Parent:
+          return index2 === 0 ? "< " : " < ";
+        case types_1.SelectorType.Sibling:
+          return index2 === 0 ? "~ " : " ~ ";
+        case types_1.SelectorType.Adjacent:
+          return index2 === 0 ? "+ " : " + ";
+        case types_1.SelectorType.Descendant:
+          return " ";
+        case types_1.SelectorType.ColumnCombinator:
+          return index2 === 0 ? "|| " : " || ";
+        case types_1.SelectorType.Universal:
+          return token.namespace === "*" && index2 + 1 < arr.length && "name" in arr[index2 + 1] ? "" : "".concat(getNamespace(token.namespace), "*");
+        case types_1.SelectorType.Tag:
+          return getNamespacedName(token);
+        case types_1.SelectorType.PseudoElement:
+          return "::".concat(escapeName(token.name, charsToEscapeInName)).concat(token.data === null ? "" : "(".concat(escapeName(token.data, charsToEscapeInPseudoValue), ")"));
+        case types_1.SelectorType.Pseudo:
+          return ":".concat(escapeName(token.name, charsToEscapeInName)).concat(token.data === null ? "" : "(".concat(typeof token.data === "string" ? escapeName(token.data, charsToEscapeInPseudoValue) : stringify2(token.data), ")"));
+        case types_1.SelectorType.Attribute: {
+          if (token.name === "id" && token.action === types_1.AttributeAction.Equals && token.ignoreCase === "quirks" && !token.namespace) {
+            return "#".concat(escapeName(token.value, charsToEscapeInName));
+          }
+          if (token.name === "class" && token.action === types_1.AttributeAction.Element && token.ignoreCase === "quirks" && !token.namespace) {
+            return ".".concat(escapeName(token.value, charsToEscapeInName));
+          }
+          var name_1 = getNamespacedName(token);
+          if (token.action === types_1.AttributeAction.Exists) {
+            return "[".concat(name_1, "]");
+          }
+          return "[".concat(name_1).concat(getActionValue(token.action), '="').concat(escapeName(token.value, charsToEscapeInAttributeValue), '"').concat(token.ignoreCase === null ? "" : token.ignoreCase ? " i" : " s", "]");
+        }
+      }
+    }
+    function getActionValue(action) {
+      switch (action) {
+        case types_1.AttributeAction.Equals:
+          return "";
+        case types_1.AttributeAction.Element:
+          return "~";
+        case types_1.AttributeAction.Start:
+          return "^";
+        case types_1.AttributeAction.End:
+          return "$";
+        case types_1.AttributeAction.Any:
+          return "*";
+        case types_1.AttributeAction.Not:
+          return "!";
+        case types_1.AttributeAction.Hyphen:
+          return "|";
+        case types_1.AttributeAction.Exists:
+          throw new Error("Shouldn't be here");
+      }
+    }
+    function getNamespacedName(token) {
+      return "".concat(getNamespace(token.namespace)).concat(escapeName(token.name, charsToEscapeInName));
+    }
+    function getNamespace(namespace) {
+      return namespace !== null ? "".concat(namespace === "*" ? "*" : escapeName(namespace, charsToEscapeInName), "|") : "";
+    }
+    function escapeName(str, charsToEscape) {
+      var lastIdx = 0;
+      var ret = "";
+      for (var i = 0; i < str.length; i++) {
+        if (charsToEscape.has(str.charCodeAt(i))) {
+          ret += "".concat(str.slice(lastIdx, i), "\\").concat(str.charAt(i));
+          lastIdx = i + 1;
+        }
+      }
+      return ret.length > 0 ? ret + str.slice(lastIdx) : str;
+    }
+  }
+});
+
+// node_modules/css-what/lib/commonjs/index.js
+var require_commonjs = __commonJS({
+  "node_modules/css-what/lib/commonjs/index.js"(exports) {
+    "use strict";
+    var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
+      if (k2 === void 0)
+        k2 = k;
+      var desc = Object.getOwnPropertyDescriptor(m, k);
+      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+        desc = { enumerable: true, get: function() {
+          return m[k];
+        } };
+      }
+      Object.defineProperty(o, k2, desc);
+    } : function(o, m, k, k2) {
+      if (k2 === void 0)
+        k2 = k;
+      o[k2] = m[k];
+    });
+    var __exportStar = exports && exports.__exportStar || function(m, exports2) {
+      for (var p in m)
+        if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p))
+          __createBinding(exports2, m, p);
+    };
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.stringify = exports.parse = exports.isTraversal = void 0;
+    __exportStar(require_types(), exports);
+    var parse_1 = require_parse();
+    Object.defineProperty(exports, "isTraversal", { enumerable: true, get: function() {
+      return parse_1.isTraversal;
+    } });
+    Object.defineProperty(exports, "parse", { enumerable: true, get: function() {
+      return parse_1.parse;
+    } });
+    var stringify_1 = require_stringify();
+    Object.defineProperty(exports, "stringify", { enumerable: true, get: function() {
+      return stringify_1.stringify;
+    } });
+  }
+});
+
+// node_modules/boolbase/index.js
+var require_boolbase = __commonJS({
+  "node_modules/boolbase/index.js"(exports, module2) {
+    module2.exports = {
+      trueFunc: function trueFunc2() {
+        return true;
+      },
+      falseFunc: function falseFunc() {
+        return false;
+      }
+    };
+  }
+});
+
 // node_modules/crypto-js/core.js
 var require_core = __commonJS({
   "node_modules/crypto-js/core.js"(exports, module2) {
@@ -5500,909 +6067,6 @@ var require_crypto_js = __commonJS({
     });
   }
 });
-
-// node_modules/css-what/lib/commonjs/types.js
-var require_types = __commonJS({
-  "node_modules/css-what/lib/commonjs/types.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.AttributeAction = exports.IgnoreCaseMode = exports.SelectorType = void 0;
-    var SelectorType5;
-    (function(SelectorType6) {
-      SelectorType6["Attribute"] = "attribute";
-      SelectorType6["Pseudo"] = "pseudo";
-      SelectorType6["PseudoElement"] = "pseudo-element";
-      SelectorType6["Tag"] = "tag";
-      SelectorType6["Universal"] = "universal";
-      SelectorType6["Adjacent"] = "adjacent";
-      SelectorType6["Child"] = "child";
-      SelectorType6["Descendant"] = "descendant";
-      SelectorType6["Parent"] = "parent";
-      SelectorType6["Sibling"] = "sibling";
-      SelectorType6["ColumnCombinator"] = "column-combinator";
-    })(SelectorType5 = exports.SelectorType || (exports.SelectorType = {}));
-    exports.IgnoreCaseMode = {
-      Unknown: null,
-      QuirksMode: "quirks",
-      IgnoreCase: true,
-      CaseSensitive: false
-    };
-    var AttributeAction2;
-    (function(AttributeAction3) {
-      AttributeAction3["Any"] = "any";
-      AttributeAction3["Element"] = "element";
-      AttributeAction3["End"] = "end";
-      AttributeAction3["Equals"] = "equals";
-      AttributeAction3["Exists"] = "exists";
-      AttributeAction3["Hyphen"] = "hyphen";
-      AttributeAction3["Not"] = "not";
-      AttributeAction3["Start"] = "start";
-    })(AttributeAction2 = exports.AttributeAction || (exports.AttributeAction = {}));
-  }
-});
-
-// node_modules/css-what/lib/commonjs/parse.js
-var require_parse = __commonJS({
-  "node_modules/css-what/lib/commonjs/parse.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.parse = exports.isTraversal = void 0;
-    var types_1 = require_types();
-    var reName = /^[^\\#]?(?:\\(?:[\da-f]{1,6}\s?|.)|[\w\-\u00b0-\uFFFF])+/;
-    var reEscape = /\\([\da-f]{1,6}\s?|(\s)|.)/gi;
-    var actionTypes = /* @__PURE__ */ new Map([
-      [126, types_1.AttributeAction.Element],
-      [94, types_1.AttributeAction.Start],
-      [36, types_1.AttributeAction.End],
-      [42, types_1.AttributeAction.Any],
-      [33, types_1.AttributeAction.Not],
-      [124, types_1.AttributeAction.Hyphen]
-    ]);
-    var unpackPseudos = /* @__PURE__ */ new Set([
-      "has",
-      "not",
-      "matches",
-      "is",
-      "where",
-      "host",
-      "host-context"
-    ]);
-    function isTraversal3(selector) {
-      switch (selector.type) {
-        case types_1.SelectorType.Adjacent:
-        case types_1.SelectorType.Child:
-        case types_1.SelectorType.Descendant:
-        case types_1.SelectorType.Parent:
-        case types_1.SelectorType.Sibling:
-        case types_1.SelectorType.ColumnCombinator:
-          return true;
-        default:
-          return false;
-      }
-    }
-    exports.isTraversal = isTraversal3;
-    var stripQuotesFromPseudos = /* @__PURE__ */ new Set(["contains", "icontains"]);
-    function funescape(_, escaped, escapedWhitespace) {
-      var high = parseInt(escaped, 16) - 65536;
-      return high !== high || escapedWhitespace ? escaped : high < 0 ? String.fromCharCode(high + 65536) : String.fromCharCode(high >> 10 | 55296, high & 1023 | 56320);
-    }
-    function unescapeCSS(str) {
-      return str.replace(reEscape, funescape);
-    }
-    function isQuote(c) {
-      return c === 39 || c === 34;
-    }
-    function isWhitespace3(c) {
-      return c === 32 || c === 9 || c === 10 || c === 12 || c === 13;
-    }
-    function parse8(selector) {
-      var subselects2 = [];
-      var endIndex = parseSelector(subselects2, "".concat(selector), 0);
-      if (endIndex < selector.length) {
-        throw new Error("Unmatched selector: ".concat(selector.slice(endIndex)));
-      }
-      return subselects2;
-    }
-    exports.parse = parse8;
-    function parseSelector(subselects2, selector, selectorIndex) {
-      var tokens = [];
-      function getName2(offset) {
-        var match = selector.slice(selectorIndex + offset).match(reName);
-        if (!match) {
-          throw new Error("Expected name, found ".concat(selector.slice(selectorIndex)));
-        }
-        var name = match[0];
-        selectorIndex += offset + name.length;
-        return unescapeCSS(name);
-      }
-      function stripWhitespace(offset) {
-        selectorIndex += offset;
-        while (selectorIndex < selector.length && isWhitespace3(selector.charCodeAt(selectorIndex))) {
-          selectorIndex++;
-        }
-      }
-      function readValueWithParenthesis() {
-        selectorIndex += 1;
-        var start = selectorIndex;
-        var counter = 1;
-        for (; counter > 0 && selectorIndex < selector.length; selectorIndex++) {
-          if (selector.charCodeAt(selectorIndex) === 40 && !isEscaped(selectorIndex)) {
-            counter++;
-          } else if (selector.charCodeAt(selectorIndex) === 41 && !isEscaped(selectorIndex)) {
-            counter--;
-          }
-        }
-        if (counter) {
-          throw new Error("Parenthesis not matched");
-        }
-        return unescapeCSS(selector.slice(start, selectorIndex - 1));
-      }
-      function isEscaped(pos) {
-        var slashCount = 0;
-        while (selector.charCodeAt(--pos) === 92)
-          slashCount++;
-        return (slashCount & 1) === 1;
-      }
-      function ensureNotTraversal() {
-        if (tokens.length > 0 && isTraversal3(tokens[tokens.length - 1])) {
-          throw new Error("Did not expect successive traversals.");
-        }
-      }
-      function addTraversal(type) {
-        if (tokens.length > 0 && tokens[tokens.length - 1].type === types_1.SelectorType.Descendant) {
-          tokens[tokens.length - 1].type = type;
-          return;
-        }
-        ensureNotTraversal();
-        tokens.push({ type });
-      }
-      function addSpecialAttribute(name, action2) {
-        tokens.push({
-          type: types_1.SelectorType.Attribute,
-          name,
-          action: action2,
-          value: getName2(1),
-          namespace: null,
-          ignoreCase: "quirks"
-        });
-      }
-      function finalizeSubselector() {
-        if (tokens.length && tokens[tokens.length - 1].type === types_1.SelectorType.Descendant) {
-          tokens.pop();
-        }
-        if (tokens.length === 0) {
-          throw new Error("Empty sub-selector");
-        }
-        subselects2.push(tokens);
-      }
-      stripWhitespace(0);
-      if (selector.length === selectorIndex) {
-        return selectorIndex;
-      }
-      loop:
-        while (selectorIndex < selector.length) {
-          var firstChar = selector.charCodeAt(selectorIndex);
-          switch (firstChar) {
-            case 32:
-            case 9:
-            case 10:
-            case 12:
-            case 13: {
-              if (tokens.length === 0 || tokens[0].type !== types_1.SelectorType.Descendant) {
-                ensureNotTraversal();
-                tokens.push({ type: types_1.SelectorType.Descendant });
-              }
-              stripWhitespace(1);
-              break;
-            }
-            case 62: {
-              addTraversal(types_1.SelectorType.Child);
-              stripWhitespace(1);
-              break;
-            }
-            case 60: {
-              addTraversal(types_1.SelectorType.Parent);
-              stripWhitespace(1);
-              break;
-            }
-            case 126: {
-              addTraversal(types_1.SelectorType.Sibling);
-              stripWhitespace(1);
-              break;
-            }
-            case 43: {
-              addTraversal(types_1.SelectorType.Adjacent);
-              stripWhitespace(1);
-              break;
-            }
-            case 46: {
-              addSpecialAttribute("class", types_1.AttributeAction.Element);
-              break;
-            }
-            case 35: {
-              addSpecialAttribute("id", types_1.AttributeAction.Equals);
-              break;
-            }
-            case 91: {
-              stripWhitespace(1);
-              var name_1 = void 0;
-              var namespace = null;
-              if (selector.charCodeAt(selectorIndex) === 124) {
-                name_1 = getName2(1);
-              } else if (selector.startsWith("*|", selectorIndex)) {
-                namespace = "*";
-                name_1 = getName2(2);
-              } else {
-                name_1 = getName2(0);
-                if (selector.charCodeAt(selectorIndex) === 124 && selector.charCodeAt(selectorIndex + 1) !== 61) {
-                  namespace = name_1;
-                  name_1 = getName2(1);
-                }
-              }
-              stripWhitespace(0);
-              var action = types_1.AttributeAction.Exists;
-              var possibleAction = actionTypes.get(selector.charCodeAt(selectorIndex));
-              if (possibleAction) {
-                action = possibleAction;
-                if (selector.charCodeAt(selectorIndex + 1) !== 61) {
-                  throw new Error("Expected `=`");
-                }
-                stripWhitespace(2);
-              } else if (selector.charCodeAt(selectorIndex) === 61) {
-                action = types_1.AttributeAction.Equals;
-                stripWhitespace(1);
-              }
-              var value = "";
-              var ignoreCase = null;
-              if (action !== "exists") {
-                if (isQuote(selector.charCodeAt(selectorIndex))) {
-                  var quote = selector.charCodeAt(selectorIndex);
-                  var sectionEnd = selectorIndex + 1;
-                  while (sectionEnd < selector.length && (selector.charCodeAt(sectionEnd) !== quote || isEscaped(sectionEnd))) {
-                    sectionEnd += 1;
-                  }
-                  if (selector.charCodeAt(sectionEnd) !== quote) {
-                    throw new Error("Attribute value didn't end");
-                  }
-                  value = unescapeCSS(selector.slice(selectorIndex + 1, sectionEnd));
-                  selectorIndex = sectionEnd + 1;
-                } else {
-                  var valueStart = selectorIndex;
-                  while (selectorIndex < selector.length && (!isWhitespace3(selector.charCodeAt(selectorIndex)) && selector.charCodeAt(selectorIndex) !== 93 || isEscaped(selectorIndex))) {
-                    selectorIndex += 1;
-                  }
-                  value = unescapeCSS(selector.slice(valueStart, selectorIndex));
-                }
-                stripWhitespace(0);
-                var forceIgnore = selector.charCodeAt(selectorIndex) | 32;
-                if (forceIgnore === 115) {
-                  ignoreCase = false;
-                  stripWhitespace(1);
-                } else if (forceIgnore === 105) {
-                  ignoreCase = true;
-                  stripWhitespace(1);
-                }
-              }
-              if (selector.charCodeAt(selectorIndex) !== 93) {
-                throw new Error("Attribute selector didn't terminate");
-              }
-              selectorIndex += 1;
-              var attributeSelector = {
-                type: types_1.SelectorType.Attribute,
-                name: name_1,
-                action,
-                value,
-                namespace,
-                ignoreCase
-              };
-              tokens.push(attributeSelector);
-              break;
-            }
-            case 58: {
-              if (selector.charCodeAt(selectorIndex + 1) === 58) {
-                tokens.push({
-                  type: types_1.SelectorType.PseudoElement,
-                  name: getName2(2).toLowerCase(),
-                  data: selector.charCodeAt(selectorIndex) === 40 ? readValueWithParenthesis() : null
-                });
-                continue;
-              }
-              var name_2 = getName2(1).toLowerCase();
-              var data2 = null;
-              if (selector.charCodeAt(selectorIndex) === 40) {
-                if (unpackPseudos.has(name_2)) {
-                  if (isQuote(selector.charCodeAt(selectorIndex + 1))) {
-                    throw new Error("Pseudo-selector ".concat(name_2, " cannot be quoted"));
-                  }
-                  data2 = [];
-                  selectorIndex = parseSelector(data2, selector, selectorIndex + 1);
-                  if (selector.charCodeAt(selectorIndex) !== 41) {
-                    throw new Error("Missing closing parenthesis in :".concat(name_2, " (").concat(selector, ")"));
-                  }
-                  selectorIndex += 1;
-                } else {
-                  data2 = readValueWithParenthesis();
-                  if (stripQuotesFromPseudos.has(name_2)) {
-                    var quot = data2.charCodeAt(0);
-                    if (quot === data2.charCodeAt(data2.length - 1) && isQuote(quot)) {
-                      data2 = data2.slice(1, -1);
-                    }
-                  }
-                  data2 = unescapeCSS(data2);
-                }
-              }
-              tokens.push({ type: types_1.SelectorType.Pseudo, name: name_2, data: data2 });
-              break;
-            }
-            case 44: {
-              finalizeSubselector();
-              tokens = [];
-              stripWhitespace(1);
-              break;
-            }
-            default: {
-              if (selector.startsWith("/*", selectorIndex)) {
-                var endIndex = selector.indexOf("*/", selectorIndex + 2);
-                if (endIndex < 0) {
-                  throw new Error("Comment was not terminated");
-                }
-                selectorIndex = endIndex + 2;
-                if (tokens.length === 0) {
-                  stripWhitespace(0);
-                }
-                break;
-              }
-              var namespace = null;
-              var name_3 = void 0;
-              if (firstChar === 42) {
-                selectorIndex += 1;
-                name_3 = "*";
-              } else if (firstChar === 124) {
-                name_3 = "";
-                if (selector.charCodeAt(selectorIndex + 1) === 124) {
-                  addTraversal(types_1.SelectorType.ColumnCombinator);
-                  stripWhitespace(2);
-                  break;
-                }
-              } else if (reName.test(selector.slice(selectorIndex))) {
-                name_3 = getName2(0);
-              } else {
-                break loop;
-              }
-              if (selector.charCodeAt(selectorIndex) === 124 && selector.charCodeAt(selectorIndex + 1) !== 124) {
-                namespace = name_3;
-                if (selector.charCodeAt(selectorIndex + 1) === 42) {
-                  name_3 = "*";
-                  selectorIndex += 2;
-                } else {
-                  name_3 = getName2(1);
-                }
-              }
-              tokens.push(name_3 === "*" ? { type: types_1.SelectorType.Universal, namespace } : { type: types_1.SelectorType.Tag, name: name_3, namespace });
-            }
-          }
-        }
-      finalizeSubselector();
-      return selectorIndex;
-    }
-  }
-});
-
-// node_modules/css-what/lib/commonjs/stringify.js
-var require_stringify = __commonJS({
-  "node_modules/css-what/lib/commonjs/stringify.js"(exports) {
-    "use strict";
-    var __spreadArray = exports && exports.__spreadArray || function(to, from, pack) {
-      if (pack || arguments.length === 2)
-        for (var i = 0, l = from.length, ar; i < l; i++) {
-          if (ar || !(i in from)) {
-            if (!ar)
-              ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-          }
-        }
-      return to.concat(ar || Array.prototype.slice.call(from));
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.stringify = void 0;
-    var types_1 = require_types();
-    var attribValChars = ["\\", '"'];
-    var pseudoValChars = __spreadArray(__spreadArray([], attribValChars, true), ["(", ")"], false);
-    var charsToEscapeInAttributeValue = new Set(attribValChars.map(function(c) {
-      return c.charCodeAt(0);
-    }));
-    var charsToEscapeInPseudoValue = new Set(pseudoValChars.map(function(c) {
-      return c.charCodeAt(0);
-    }));
-    var charsToEscapeInName = new Set(__spreadArray(__spreadArray([], pseudoValChars, true), [
-      "~",
-      "^",
-      "$",
-      "*",
-      "+",
-      "!",
-      "|",
-      ":",
-      "[",
-      "]",
-      " ",
-      "."
-    ], false).map(function(c) {
-      return c.charCodeAt(0);
-    }));
-    function stringify2(selector) {
-      return selector.map(function(token) {
-        return token.map(stringifyToken).join("");
-      }).join(", ");
-    }
-    exports.stringify = stringify2;
-    function stringifyToken(token, index2, arr) {
-      switch (token.type) {
-        case types_1.SelectorType.Child:
-          return index2 === 0 ? "> " : " > ";
-        case types_1.SelectorType.Parent:
-          return index2 === 0 ? "< " : " < ";
-        case types_1.SelectorType.Sibling:
-          return index2 === 0 ? "~ " : " ~ ";
-        case types_1.SelectorType.Adjacent:
-          return index2 === 0 ? "+ " : " + ";
-        case types_1.SelectorType.Descendant:
-          return " ";
-        case types_1.SelectorType.ColumnCombinator:
-          return index2 === 0 ? "|| " : " || ";
-        case types_1.SelectorType.Universal:
-          return token.namespace === "*" && index2 + 1 < arr.length && "name" in arr[index2 + 1] ? "" : "".concat(getNamespace(token.namespace), "*");
-        case types_1.SelectorType.Tag:
-          return getNamespacedName(token);
-        case types_1.SelectorType.PseudoElement:
-          return "::".concat(escapeName(token.name, charsToEscapeInName)).concat(token.data === null ? "" : "(".concat(escapeName(token.data, charsToEscapeInPseudoValue), ")"));
-        case types_1.SelectorType.Pseudo:
-          return ":".concat(escapeName(token.name, charsToEscapeInName)).concat(token.data === null ? "" : "(".concat(typeof token.data === "string" ? escapeName(token.data, charsToEscapeInPseudoValue) : stringify2(token.data), ")"));
-        case types_1.SelectorType.Attribute: {
-          if (token.name === "id" && token.action === types_1.AttributeAction.Equals && token.ignoreCase === "quirks" && !token.namespace) {
-            return "#".concat(escapeName(token.value, charsToEscapeInName));
-          }
-          if (token.name === "class" && token.action === types_1.AttributeAction.Element && token.ignoreCase === "quirks" && !token.namespace) {
-            return ".".concat(escapeName(token.value, charsToEscapeInName));
-          }
-          var name_1 = getNamespacedName(token);
-          if (token.action === types_1.AttributeAction.Exists) {
-            return "[".concat(name_1, "]");
-          }
-          return "[".concat(name_1).concat(getActionValue(token.action), '="').concat(escapeName(token.value, charsToEscapeInAttributeValue), '"').concat(token.ignoreCase === null ? "" : token.ignoreCase ? " i" : " s", "]");
-        }
-      }
-    }
-    function getActionValue(action) {
-      switch (action) {
-        case types_1.AttributeAction.Equals:
-          return "";
-        case types_1.AttributeAction.Element:
-          return "~";
-        case types_1.AttributeAction.Start:
-          return "^";
-        case types_1.AttributeAction.End:
-          return "$";
-        case types_1.AttributeAction.Any:
-          return "*";
-        case types_1.AttributeAction.Not:
-          return "!";
-        case types_1.AttributeAction.Hyphen:
-          return "|";
-        case types_1.AttributeAction.Exists:
-          throw new Error("Shouldn't be here");
-      }
-    }
-    function getNamespacedName(token) {
-      return "".concat(getNamespace(token.namespace)).concat(escapeName(token.name, charsToEscapeInName));
-    }
-    function getNamespace(namespace) {
-      return namespace !== null ? "".concat(namespace === "*" ? "*" : escapeName(namespace, charsToEscapeInName), "|") : "";
-    }
-    function escapeName(str, charsToEscape) {
-      var lastIdx = 0;
-      var ret = "";
-      for (var i = 0; i < str.length; i++) {
-        if (charsToEscape.has(str.charCodeAt(i))) {
-          ret += "".concat(str.slice(lastIdx, i), "\\").concat(str.charAt(i));
-          lastIdx = i + 1;
-        }
-      }
-      return ret.length > 0 ? ret + str.slice(lastIdx) : str;
-    }
-  }
-});
-
-// node_modules/css-what/lib/commonjs/index.js
-var require_commonjs = __commonJS({
-  "node_modules/css-what/lib/commonjs/index.js"(exports) {
-    "use strict";
-    var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-      if (k2 === void 0)
-        k2 = k;
-      var desc = Object.getOwnPropertyDescriptor(m, k);
-      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-        desc = { enumerable: true, get: function() {
-          return m[k];
-        } };
-      }
-      Object.defineProperty(o, k2, desc);
-    } : function(o, m, k, k2) {
-      if (k2 === void 0)
-        k2 = k;
-      o[k2] = m[k];
-    });
-    var __exportStar = exports && exports.__exportStar || function(m, exports2) {
-      for (var p in m)
-        if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p))
-          __createBinding(exports2, m, p);
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.stringify = exports.parse = exports.isTraversal = void 0;
-    __exportStar(require_types(), exports);
-    var parse_1 = require_parse();
-    Object.defineProperty(exports, "isTraversal", { enumerable: true, get: function() {
-      return parse_1.isTraversal;
-    } });
-    Object.defineProperty(exports, "parse", { enumerable: true, get: function() {
-      return parse_1.parse;
-    } });
-    var stringify_1 = require_stringify();
-    Object.defineProperty(exports, "stringify", { enumerable: true, get: function() {
-      return stringify_1.stringify;
-    } });
-  }
-});
-
-// node_modules/boolbase/index.js
-var require_boolbase = __commonJS({
-  "node_modules/boolbase/index.js"(exports, module2) {
-    module2.exports = {
-      trueFunc: function trueFunc2() {
-        return true;
-      },
-      falseFunc: function falseFunc() {
-        return false;
-      }
-    };
-  }
-});
-
-// node_modules/@bob-plug/core/lib/index.esm.js
-var api = {
-  $http,
-  $info,
-  $log,
-  $data,
-  $file,
-  getOption: (key) => $option[key]
-};
-var __defProp$1 = Object.defineProperty;
-var __getOwnPropSymbols$1 = Object.getOwnPropertySymbols;
-var __hasOwnProp$1 = Object.prototype.hasOwnProperty;
-var __propIsEnum$1 = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$1 = (obj, key, value) => key in obj ? __defProp$1(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$1 = (a, b) => {
-  for (var prop2 in b || (b = {}))
-    if (__hasOwnProp$1.call(b, prop2))
-      __defNormalProp$1(a, prop2, b[prop2]);
-  if (__getOwnPropSymbols$1)
-    for (var prop2 of __getOwnPropSymbols$1(b)) {
-      if (__propIsEnum$1.call(b, prop2))
-        __defNormalProp$1(a, prop2, b[prop2]);
-    }
-  return a;
-};
-var __async = (__this, __arguments, generator) => {
-  return new Promise((resolve, reject) => {
-    var fulfilled = (value) => {
-      try {
-        step(generator.next(value));
-      } catch (e) {
-        reject(e);
-      }
-    };
-    var rejected = (value) => {
-      try {
-        step(generator.throw(value));
-      } catch (e) {
-        reject(e);
-      }
-    };
-    var step = (x) => x.done ? resolve(x.value) : Promise.resolve(x.value).then(fulfilled, rejected);
-    step((generator = generator.apply(__this, __arguments)).next());
-  });
-};
-function error(type = "unknown", message = "\u63D2\u4EF6\u51FA\u9519", addtion = {}) {
-  return {
-    type,
-    message,
-    addtion: JSON.stringify(addtion)
-  };
-}
-var isArray = (val2) => Array.isArray(val2);
-var isArrayAndLenGt = (val2, len = 0) => isArray(val2) && val2.length > len;
-var isString = (val2) => typeof val2 === "string";
-var isPlainObject = (val2) => !!val2 && typeof val2 === "object" && val2.constructor === Object;
-var isNil = (val2) => val2 === void 0 || val2 === null;
-function deepClone(obj) {
-  if (!isPlainObject)
-    return obj;
-  const clone2 = __spreadValues$1({}, obj);
-  Object.keys(clone2).forEach((key) => clone2[key] = typeof obj[key] === "object" ? deepClone(obj[key]) : obj[key]);
-  return Array.isArray(obj) ? (clone2.length = obj.length) && Array.from(clone2) : clone2;
-}
-function getType(v) {
-  return Reflect.toString.call(v).slice(8, -1).toLowerCase();
-}
-function asyncTo(promise, errorExt) {
-  return __async(this, null, function* () {
-    try {
-      const data2 = yield promise;
-      const result = [null, data2];
-      return result;
-    } catch (_err) {
-      let err = _err;
-      if (errorExt) {
-        Object.assign(err, errorExt);
-      }
-      const resultArr = [err, void 0];
-      return resultArr;
-    }
-  });
-}
-var util = {
-  error,
-  isString,
-  isArray,
-  isNil,
-  isArrayAndLenGt,
-  isPlainObject,
-  deepClone,
-  getType,
-  asyncTo
-};
-var Cache = class {
-  constructor(nameSpace = "bobplug-cache") {
-    this._cacheFilePath = "";
-    this._store = {};
-    this._cacheFilePath = `$sandbox/cache/${nameSpace}.json`;
-    this._read();
-  }
-  _write() {
-    const json = JSON.stringify(this._store);
-    api.$file.write({
-      data: api.$data.fromUTF8(json),
-      path: this._cacheFilePath
-    });
-  }
-  _read() {
-    var exists = api.$file.exists(this._cacheFilePath);
-    if (exists) {
-      var data2 = api.$file.read(this._cacheFilePath);
-      this._store = JSON.parse(data2.toUTF8());
-    } else {
-      this._store = {};
-      this._write();
-    }
-  }
-  set(key, value) {
-    if (!isString(key))
-      return;
-    this._store[key] = value;
-    this._write();
-  }
-  get(key) {
-    if (!isString(key))
-      return null;
-    return this._store[key];
-  }
-  getAll() {
-    return this._store;
-  }
-  remove(key) {
-    if (!isString(key))
-      return;
-    delete this._store[key];
-    this._write();
-  }
-  clear() {
-    this._store = {};
-    this._write();
-  }
-};
-var __defProp2 = Object.defineProperty;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp2 = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop2 in b || (b = {}))
-    if (__hasOwnProp2.call(b, prop2))
-      __defNormalProp(a, prop2, b[prop2]);
-  if (__getOwnPropSymbols)
-    for (var prop2 of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop2))
-        __defNormalProp(a, prop2, b[prop2]);
-    }
-  return a;
-};
-var CryptoJS = require_crypto_js();
-var CacheResult = class {
-  constructor(nameSpace) {
-    this._resultCacheStore = new Cache(nameSpace || "result-cache");
-    let result = this._resultCacheStore.get("result") || {};
-    if (!util.isPlainObject(result))
-      result = {};
-    this._result = result;
-  }
-  _save() {
-    this._resultCacheStore.set("result", __spreadValues({}, this._result));
-  }
-  get(key) {
-    if (!util.isString(key))
-      return null;
-    const md5 = CryptoJS.MD5(key).toString();
-    const result = this._result[md5];
-    if (!util.isPlainObject(result))
-      return null;
-    const { time, data: data2 } = result;
-    const cacheUpdateTime = 1e3 * 60 * 60 * 24 * 7;
-    if (Date.now() - cacheUpdateTime > time) {
-      delete this._result[md5];
-      this._save();
-      return null;
-    }
-    return data2;
-  }
-  set(key, val2) {
-    if (!util.isString(key) && !util.isPlainObject(val2) && !util.isArrayAndLenGt(val2.toParagraphs, 0))
-      return;
-    const md5 = CryptoJS.MD5(key).toString();
-    const result = { time: Date.now(), data: val2 };
-    this._result[md5] = result;
-    this._save();
-  }
-  clear() {
-    this._resultCacheStore.clear();
-  }
-};
-var LanguagesEnum;
-(function(LanguagesEnum2) {
-  LanguagesEnum2["auto"] = "\u81EA\u52A8";
-  LanguagesEnum2["zh-Hans"] = "\u4E2D\u6587\u7B80\u4F53";
-  LanguagesEnum2["zh-Hant"] = "\u4E2D\u6587\u7E41\u4F53";
-  LanguagesEnum2["yue"] = "\u7CA4\u8BED";
-  LanguagesEnum2["wyw"] = "\u6587\u8A00\u6587";
-  LanguagesEnum2["pysx"] = "\u62FC\u97F3\u7F29\u5199";
-  LanguagesEnum2["en"] = "\u82F1\u8BED";
-  LanguagesEnum2["ja"] = "\u65E5\u8BED";
-  LanguagesEnum2["ko"] = "\u97E9\u8BED";
-  LanguagesEnum2["fr"] = "\u6CD5\u8BED";
-  LanguagesEnum2["de"] = "\u5FB7\u8BED";
-  LanguagesEnum2["es"] = "\u897F\u73ED\u7259\u8BED";
-  LanguagesEnum2["it"] = "\u610F\u5927\u5229\u8BED";
-  LanguagesEnum2["ru"] = "\u4FC4\u8BED";
-  LanguagesEnum2["pt"] = "\u8461\u8404\u7259\u8BED";
-  LanguagesEnum2["nl"] = "\u8377\u5170\u8BED";
-  LanguagesEnum2["pl"] = "\u6CE2\u5170\u8BED";
-  LanguagesEnum2["ar"] = "\u963F\u62C9\u4F2F\u8BED";
-  LanguagesEnum2["af"] = "\u5357\u975E\u8BED";
-  LanguagesEnum2["am"] = "\u963F\u59C6\u54C8\u62C9\u8BED";
-  LanguagesEnum2["az"] = "\u963F\u585E\u62DC\u7586\u8BED";
-  LanguagesEnum2["be"] = "\u767D\u4FC4\u7F57\u65AF\u8BED";
-  LanguagesEnum2["bg"] = "\u4FDD\u52A0\u5229\u4E9A\u8BED";
-  LanguagesEnum2["bn"] = "\u5B5F\u52A0\u62C9\u8BED";
-  LanguagesEnum2["bo"] = "\u85CF\u8BED";
-  LanguagesEnum2["bs"] = "\u6CE2\u65AF\u5C3C\u4E9A\u8BED";
-  LanguagesEnum2["ca"] = "\u52A0\u6CF0\u9686\u8BED";
-  LanguagesEnum2["ceb"] = "\u5BBF\u52A1\u8BED";
-  LanguagesEnum2["chr"] = "\u5207\u7F57\u57FA\u8BED";
-  LanguagesEnum2["co"] = "\u79D1\u897F\u5609\u8BED";
-  LanguagesEnum2["cs"] = "\u6377\u514B\u8BED";
-  LanguagesEnum2["cy"] = "\u5A01\u5C14\u58EB\u8BED";
-  LanguagesEnum2["da"] = "\u4E39\u9EA6\u8BED";
-  LanguagesEnum2["el"] = "\u5E0C\u814A\u8BED";
-  LanguagesEnum2["eo"] = "\u4E16\u754C\u8BED";
-  LanguagesEnum2["et"] = "\u7231\u6C99\u5C3C\u4E9A\u8BED";
-  LanguagesEnum2["eu"] = "\u5DF4\u65AF\u514B\u8BED";
-  LanguagesEnum2["fa"] = "\u6CE2\u65AF\u8BED";
-  LanguagesEnum2["fi"] = "\u82AC\u5170\u8BED";
-  LanguagesEnum2["fj"] = "\u6590\u6D4E\u8BED";
-  LanguagesEnum2["fy"] = "\u5F17\u91CC\u897F\u8BED";
-  LanguagesEnum2["ga"] = "\u7231\u5C14\u5170\u8BED";
-  LanguagesEnum2["gd"] = "\u82CF\u683C\u5170\u76D6\u5C14\u8BED";
-  LanguagesEnum2["gl"] = "\u52A0\u5229\u897F\u4E9A\u8BED";
-  LanguagesEnum2["gu"] = "\u53E4\u5409\u62C9\u7279\u8BED";
-  LanguagesEnum2["ha"] = "\u8C6A\u8428\u8BED";
-  LanguagesEnum2["haw"] = "\u590F\u5A01\u5937\u8BED";
-  LanguagesEnum2["he"] = "\u5E0C\u4F2F\u6765\u8BED";
-  LanguagesEnum2["hi"] = "\u5370\u5730\u8BED";
-  LanguagesEnum2["hmn"] = "\u82D7\u8BED";
-  LanguagesEnum2["hr"] = "\u514B\u7F57\u5730\u4E9A\u8BED";
-  LanguagesEnum2["ht"] = "\u6D77\u5730\u514B\u91CC\u5965\u5C14\u8BED";
-  LanguagesEnum2["hu"] = "\u5308\u7259\u5229\u8BED";
-  LanguagesEnum2["hy"] = "\u4E9A\u7F8E\u5C3C\u4E9A\u8BED";
-  LanguagesEnum2["id"] = "\u5370\u5C3C\u8BED";
-  LanguagesEnum2["ig"] = "\u4F0A\u535A\u8BED";
-  LanguagesEnum2["is"] = "\u51B0\u5C9B\u8BED";
-  LanguagesEnum2["jw"] = "\u722A\u54C7\u8BED";
-  LanguagesEnum2["ka"] = "\u683C\u9C81\u5409\u4E9A\u8BED";
-  LanguagesEnum2["kk"] = "\u54C8\u8428\u514B\u8BED";
-  LanguagesEnum2["km"] = "\u9AD8\u68C9\u8BED";
-  LanguagesEnum2["kn"] = "\u5361\u7EB3\u8FBE\u8BED";
-  LanguagesEnum2["ku"] = "\u5E93\u5C14\u5FB7\u8BED";
-  LanguagesEnum2["ky"] = "\u67EF\u5C14\u514B\u5B5C\u8BED";
-  LanguagesEnum2["la"] = "\u8001\u631D\u8BED";
-  LanguagesEnum2["lb"] = "\u5362\u68EE\u5821\u8BED";
-  LanguagesEnum2["lo"] = "\u8001\u631D\u8BED";
-  LanguagesEnum2["lt"] = "\u7ACB\u9676\u5B9B\u8BED";
-  LanguagesEnum2["lv"] = "\u62C9\u8131\u7EF4\u4E9A\u8BED";
-  LanguagesEnum2["mg"] = "\u9A6C\u5C14\u52A0\u4EC0\u8BED";
-  LanguagesEnum2["mi"] = "\u6BDB\u5229\u8BED";
-  LanguagesEnum2["mk"] = "\u9A6C\u5176\u987F\u8BED";
-  LanguagesEnum2["ml"] = "\u9A6C\u62C9\u96C5\u62C9\u59C6\u8BED";
-  LanguagesEnum2["mn"] = "\u8499\u53E4\u8BED";
-  LanguagesEnum2["mr"] = "\u9A6C\u62C9\u5730\u8BED";
-  LanguagesEnum2["ms"] = "\u9A6C\u6765\u8BED";
-  LanguagesEnum2["mt"] = "\u9A6C\u8033\u4ED6\u8BED";
-  LanguagesEnum2["mww"] = "\u767D\u82D7\u8BED";
-  LanguagesEnum2["my"] = "\u7F05\u7538\u8BED";
-  LanguagesEnum2["ne"] = "\u5C3C\u6CCA\u5C14\u8BED";
-  LanguagesEnum2["no"] = "\u632A\u5A01\u8BED";
-  LanguagesEnum2["ny"] = "\u9F50\u5207\u74E6\u8BED";
-  LanguagesEnum2["or"] = "\u5965\u91CC\u4E9A\u8BED";
-  LanguagesEnum2["otq"] = "\u514B\u96F7\u5854\u7F57\u5965\u6258\u7C73\u8BED";
-  LanguagesEnum2["pa"] = "\u65C1\u906E\u666E\u8BED";
-  LanguagesEnum2["ps"] = "\u666E\u4EC0\u56FE\u8BED";
-  LanguagesEnum2["ro"] = "\u7F57\u9A6C\u5C3C\u4E9A\u8BED";
-  LanguagesEnum2["rw"] = "\u5362\u65FA\u8FBE\u8BED";
-  LanguagesEnum2["sd"] = "\u4FE1\u5FB7\u8BED";
-  LanguagesEnum2["si"] = "\u50E7\u4F3D\u7F57\u8BED";
-  LanguagesEnum2["sk"] = "\u65AF\u6D1B\u4F10\u514B\u8BED";
-  LanguagesEnum2["sl"] = "\u65AF\u6D1B\u6587\u5C3C\u4E9A\u8BED";
-  LanguagesEnum2["sm"] = "\u8428\u6469\u4E9A\u8BED";
-  LanguagesEnum2["sn"] = "\u4FEE\u7EB3\u8BED";
-  LanguagesEnum2["so"] = "\u7D22\u9A6C\u91CC\u8BED";
-  LanguagesEnum2["sq"] = "\u963F\u5C14\u5DF4\u5C3C\u4E9A\u8BED";
-  LanguagesEnum2["sr"] = "\u585E\u5C14\u7EF4\u4E9A\u8BED";
-  LanguagesEnum2["sr-Cyrl"] = "\u585E\u5C14\u7EF4\u4E9A\u8BED-\u897F\u91CC\u5C14\u6587";
-  LanguagesEnum2["sr-Latn"] = "\u585E\u5C14\u7EF4\u4E9A\u8BED-\u62C9\u4E01\u6587";
-  LanguagesEnum2["st"] = "\u585E\u7D22\u6258\u8BED";
-  LanguagesEnum2["su"] = "\u5DFD\u4ED6\u8BED";
-  LanguagesEnum2["sv"] = "\u745E\u5178\u8BED";
-  LanguagesEnum2["sw"] = "\u65AF\u74E6\u5E0C\u91CC\u8BED";
-  LanguagesEnum2["ta"] = "\u6CF0\u7C73\u5C14\u8BED";
-  LanguagesEnum2["te"] = "\u6CF0\u5362\u56FA\u8BED";
-  LanguagesEnum2["tg"] = "\u5854\u5409\u514B\u8BED";
-  LanguagesEnum2["th"] = "\u6CF0\u8BED";
-  LanguagesEnum2["tk"] = "\u571F\u5E93\u66FC\u8BED";
-  LanguagesEnum2["tl"] = "\u83F2\u5F8B\u5BBE\u8BED";
-  LanguagesEnum2["tlh"] = "\u514B\u6797\u8D21\u8BED";
-  LanguagesEnum2["to"] = "\u6C64\u52A0\u8BED";
-  LanguagesEnum2["tr"] = "\u571F\u8033\u5176\u8BED";
-  LanguagesEnum2["tt"] = "\u9791\u977C\u8BED";
-  LanguagesEnum2["ty"] = "\u5854\u5E0C\u63D0\u8BED";
-  LanguagesEnum2["ug"] = "\u7EF4\u543E\u5C14\u8BED";
-  LanguagesEnum2["uk"] = "\u4E4C\u514B\u5170\u8BED";
-  LanguagesEnum2["ur"] = "\u4E4C\u5C14\u90FD\u8BED";
-  LanguagesEnum2["uz"] = "\u4E4C\u5179\u522B\u514B\u8BED";
-  LanguagesEnum2["vi"] = "\u8D8A\u5357\u8BED";
-  LanguagesEnum2["xh"] = "\u79D1\u8428\u8BED";
-  LanguagesEnum2["yi"] = "\u610F\u7B2C\u7EEA\u8BED";
-  LanguagesEnum2["yo"] = "\u7EA6\u9C81\u5DF4\u8BED";
-  LanguagesEnum2["yua"] = "\u5C24\u5361\u5766\u739B\u96C5\u8BED";
-  LanguagesEnum2["zu"] = "\u7956\u9C81\u8BED";
-})(LanguagesEnum || (LanguagesEnum = {}));
-var ServiceErrorEnum;
-(function(ServiceErrorEnum2) {
-  ServiceErrorEnum2["unknown"] = "\u672A\u77E5\u9519\u8BEF";
-  ServiceErrorEnum2["param"] = "\u53C2\u6570\u9519\u8BEF";
-  ServiceErrorEnum2["unsupportLanguage"] = "\u4E0D\u652F\u6301\u7684\u8BED\u79CD";
-  ServiceErrorEnum2["secretKey"] = "\u7F3A\u5C11\u79D8\u94A5";
-  ServiceErrorEnum2["network"] = "\u7F51\u7EDC\u5F02\u5E38\uFF0C\u7F51\u7EDC\u8BF7\u5931\u8D25";
-  ServiceErrorEnum2["api"] = "\u670D\u52A1\u63A5\u53E3\u5F02\u5E38";
-})(ServiceErrorEnum || (ServiceErrorEnum = {}));
 
 // node_modules/cheerio/lib/esm/options.js
 var defaultOpts = {
@@ -19430,6 +19094,342 @@ var { merge: merge2 } = static_exports;
 var { parseHTML: parseHTML2 } = static_exports;
 var { root: root2 } = static_exports;
 
+// node_modules/@bob-plug/core/lib/index.esm.js
+var api = {
+  $http,
+  $info,
+  $log,
+  $data,
+  $file,
+  getOption: (key) => $option[key]
+};
+var __defProp$1 = Object.defineProperty;
+var __getOwnPropSymbols$1 = Object.getOwnPropertySymbols;
+var __hasOwnProp$1 = Object.prototype.hasOwnProperty;
+var __propIsEnum$1 = Object.prototype.propertyIsEnumerable;
+var __defNormalProp$1 = (obj, key, value) => key in obj ? __defProp$1(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __spreadValues$1 = (a, b) => {
+  for (var prop2 in b || (b = {}))
+    if (__hasOwnProp$1.call(b, prop2))
+      __defNormalProp$1(a, prop2, b[prop2]);
+  if (__getOwnPropSymbols$1)
+    for (var prop2 of __getOwnPropSymbols$1(b)) {
+      if (__propIsEnum$1.call(b, prop2))
+        __defNormalProp$1(a, prop2, b[prop2]);
+    }
+  return a;
+};
+var __async = (__this, __arguments, generator) => {
+  return new Promise((resolve, reject) => {
+    var fulfilled = (value) => {
+      try {
+        step(generator.next(value));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    var rejected = (value) => {
+      try {
+        step(generator.throw(value));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    var step = (x) => x.done ? resolve(x.value) : Promise.resolve(x.value).then(fulfilled, rejected);
+    step((generator = generator.apply(__this, __arguments)).next());
+  });
+};
+function error(type = "unknown", message = "\u63D2\u4EF6\u51FA\u9519", addtion = {}) {
+  return {
+    type,
+    message,
+    addtion: JSON.stringify(addtion)
+  };
+}
+var isArray = (val2) => Array.isArray(val2);
+var isArrayAndLenGt = (val2, len = 0) => isArray(val2) && val2.length > len;
+var isString = (val2) => typeof val2 === "string";
+var isPlainObject = (val2) => !!val2 && typeof val2 === "object" && val2.constructor === Object;
+var isNil = (val2) => val2 === void 0 || val2 === null;
+function deepClone(obj) {
+  if (!isPlainObject)
+    return obj;
+  const clone2 = __spreadValues$1({}, obj);
+  Object.keys(clone2).forEach((key) => clone2[key] = typeof obj[key] === "object" ? deepClone(obj[key]) : obj[key]);
+  return Array.isArray(obj) ? (clone2.length = obj.length) && Array.from(clone2) : clone2;
+}
+function getType(v) {
+  return Reflect.toString.call(v).slice(8, -1).toLowerCase();
+}
+function asyncTo(promise, errorExt) {
+  return __async(this, null, function* () {
+    try {
+      const data2 = yield promise;
+      const result = [null, data2];
+      return result;
+    } catch (_err) {
+      let err = _err;
+      if (errorExt) {
+        Object.assign(err, errorExt);
+      }
+      const resultArr = [err, void 0];
+      return resultArr;
+    }
+  });
+}
+var util = {
+  error,
+  isString,
+  isArray,
+  isNil,
+  isArrayAndLenGt,
+  isPlainObject,
+  deepClone,
+  getType,
+  asyncTo
+};
+var Cache = class {
+  constructor(nameSpace = "bobplug-cache") {
+    this._cacheFilePath = "";
+    this._store = {};
+    this._cacheFilePath = `$sandbox/cache/${nameSpace}.json`;
+    this._read();
+  }
+  _write() {
+    const json = JSON.stringify(this._store);
+    api.$file.write({
+      data: api.$data.fromUTF8(json),
+      path: this._cacheFilePath
+    });
+  }
+  _read() {
+    var exists = api.$file.exists(this._cacheFilePath);
+    if (exists) {
+      var data2 = api.$file.read(this._cacheFilePath);
+      this._store = JSON.parse(data2.toUTF8());
+    } else {
+      this._store = {};
+      this._write();
+    }
+  }
+  set(key, value) {
+    if (!isString(key))
+      return;
+    this._store[key] = value;
+    this._write();
+  }
+  get(key) {
+    if (!isString(key))
+      return null;
+    return this._store[key];
+  }
+  getAll() {
+    return this._store;
+  }
+  remove(key) {
+    if (!isString(key))
+      return;
+    delete this._store[key];
+    this._write();
+  }
+  clear() {
+    this._store = {};
+    this._write();
+  }
+};
+var __defProp2 = Object.defineProperty;
+var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+var __hasOwnProp2 = Object.prototype.hasOwnProperty;
+var __propIsEnum = Object.prototype.propertyIsEnumerable;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __spreadValues = (a, b) => {
+  for (var prop2 in b || (b = {}))
+    if (__hasOwnProp2.call(b, prop2))
+      __defNormalProp(a, prop2, b[prop2]);
+  if (__getOwnPropSymbols)
+    for (var prop2 of __getOwnPropSymbols(b)) {
+      if (__propIsEnum.call(b, prop2))
+        __defNormalProp(a, prop2, b[prop2]);
+    }
+  return a;
+};
+var CryptoJS = require_crypto_js();
+var CacheResult = class {
+  constructor(nameSpace) {
+    this._resultCacheStore = new Cache(nameSpace || "result-cache");
+    let result = this._resultCacheStore.get("result") || {};
+    if (!util.isPlainObject(result))
+      result = {};
+    this._result = result;
+  }
+  _save() {
+    this._resultCacheStore.set("result", __spreadValues({}, this._result));
+  }
+  get(key) {
+    if (!util.isString(key))
+      return null;
+    const md5 = CryptoJS.MD5(key).toString();
+    const result = this._result[md5];
+    if (!util.isPlainObject(result))
+      return null;
+    const { time, data: data2 } = result;
+    const cacheUpdateTime = 1e3 * 60 * 60 * 24 * 7;
+    if (Date.now() - cacheUpdateTime > time) {
+      delete this._result[md5];
+      this._save();
+      return null;
+    }
+    return data2;
+  }
+  set(key, val2) {
+    if (!util.isString(key) && !util.isPlainObject(val2) && !util.isArrayAndLenGt(val2.toParagraphs, 0))
+      return;
+    const md5 = CryptoJS.MD5(key).toString();
+    const result = { time: Date.now(), data: val2 };
+    this._result[md5] = result;
+    this._save();
+  }
+  clear() {
+    this._resultCacheStore.clear();
+  }
+};
+var LanguagesEnum;
+(function(LanguagesEnum2) {
+  LanguagesEnum2["auto"] = "\u81EA\u52A8";
+  LanguagesEnum2["zh-Hans"] = "\u4E2D\u6587\u7B80\u4F53";
+  LanguagesEnum2["zh-Hant"] = "\u4E2D\u6587\u7E41\u4F53";
+  LanguagesEnum2["yue"] = "\u7CA4\u8BED";
+  LanguagesEnum2["wyw"] = "\u6587\u8A00\u6587";
+  LanguagesEnum2["pysx"] = "\u62FC\u97F3\u7F29\u5199";
+  LanguagesEnum2["en"] = "\u82F1\u8BED";
+  LanguagesEnum2["ja"] = "\u65E5\u8BED";
+  LanguagesEnum2["ko"] = "\u97E9\u8BED";
+  LanguagesEnum2["fr"] = "\u6CD5\u8BED";
+  LanguagesEnum2["de"] = "\u5FB7\u8BED";
+  LanguagesEnum2["es"] = "\u897F\u73ED\u7259\u8BED";
+  LanguagesEnum2["it"] = "\u610F\u5927\u5229\u8BED";
+  LanguagesEnum2["ru"] = "\u4FC4\u8BED";
+  LanguagesEnum2["pt"] = "\u8461\u8404\u7259\u8BED";
+  LanguagesEnum2["nl"] = "\u8377\u5170\u8BED";
+  LanguagesEnum2["pl"] = "\u6CE2\u5170\u8BED";
+  LanguagesEnum2["ar"] = "\u963F\u62C9\u4F2F\u8BED";
+  LanguagesEnum2["af"] = "\u5357\u975E\u8BED";
+  LanguagesEnum2["am"] = "\u963F\u59C6\u54C8\u62C9\u8BED";
+  LanguagesEnum2["az"] = "\u963F\u585E\u62DC\u7586\u8BED";
+  LanguagesEnum2["be"] = "\u767D\u4FC4\u7F57\u65AF\u8BED";
+  LanguagesEnum2["bg"] = "\u4FDD\u52A0\u5229\u4E9A\u8BED";
+  LanguagesEnum2["bn"] = "\u5B5F\u52A0\u62C9\u8BED";
+  LanguagesEnum2["bo"] = "\u85CF\u8BED";
+  LanguagesEnum2["bs"] = "\u6CE2\u65AF\u5C3C\u4E9A\u8BED";
+  LanguagesEnum2["ca"] = "\u52A0\u6CF0\u9686\u8BED";
+  LanguagesEnum2["ceb"] = "\u5BBF\u52A1\u8BED";
+  LanguagesEnum2["chr"] = "\u5207\u7F57\u57FA\u8BED";
+  LanguagesEnum2["co"] = "\u79D1\u897F\u5609\u8BED";
+  LanguagesEnum2["cs"] = "\u6377\u514B\u8BED";
+  LanguagesEnum2["cy"] = "\u5A01\u5C14\u58EB\u8BED";
+  LanguagesEnum2["da"] = "\u4E39\u9EA6\u8BED";
+  LanguagesEnum2["el"] = "\u5E0C\u814A\u8BED";
+  LanguagesEnum2["eo"] = "\u4E16\u754C\u8BED";
+  LanguagesEnum2["et"] = "\u7231\u6C99\u5C3C\u4E9A\u8BED";
+  LanguagesEnum2["eu"] = "\u5DF4\u65AF\u514B\u8BED";
+  LanguagesEnum2["fa"] = "\u6CE2\u65AF\u8BED";
+  LanguagesEnum2["fi"] = "\u82AC\u5170\u8BED";
+  LanguagesEnum2["fj"] = "\u6590\u6D4E\u8BED";
+  LanguagesEnum2["fy"] = "\u5F17\u91CC\u897F\u8BED";
+  LanguagesEnum2["ga"] = "\u7231\u5C14\u5170\u8BED";
+  LanguagesEnum2["gd"] = "\u82CF\u683C\u5170\u76D6\u5C14\u8BED";
+  LanguagesEnum2["gl"] = "\u52A0\u5229\u897F\u4E9A\u8BED";
+  LanguagesEnum2["gu"] = "\u53E4\u5409\u62C9\u7279\u8BED";
+  LanguagesEnum2["ha"] = "\u8C6A\u8428\u8BED";
+  LanguagesEnum2["haw"] = "\u590F\u5A01\u5937\u8BED";
+  LanguagesEnum2["he"] = "\u5E0C\u4F2F\u6765\u8BED";
+  LanguagesEnum2["hi"] = "\u5370\u5730\u8BED";
+  LanguagesEnum2["hmn"] = "\u82D7\u8BED";
+  LanguagesEnum2["hr"] = "\u514B\u7F57\u5730\u4E9A\u8BED";
+  LanguagesEnum2["ht"] = "\u6D77\u5730\u514B\u91CC\u5965\u5C14\u8BED";
+  LanguagesEnum2["hu"] = "\u5308\u7259\u5229\u8BED";
+  LanguagesEnum2["hy"] = "\u4E9A\u7F8E\u5C3C\u4E9A\u8BED";
+  LanguagesEnum2["id"] = "\u5370\u5C3C\u8BED";
+  LanguagesEnum2["ig"] = "\u4F0A\u535A\u8BED";
+  LanguagesEnum2["is"] = "\u51B0\u5C9B\u8BED";
+  LanguagesEnum2["jw"] = "\u722A\u54C7\u8BED";
+  LanguagesEnum2["ka"] = "\u683C\u9C81\u5409\u4E9A\u8BED";
+  LanguagesEnum2["kk"] = "\u54C8\u8428\u514B\u8BED";
+  LanguagesEnum2["km"] = "\u9AD8\u68C9\u8BED";
+  LanguagesEnum2["kn"] = "\u5361\u7EB3\u8FBE\u8BED";
+  LanguagesEnum2["ku"] = "\u5E93\u5C14\u5FB7\u8BED";
+  LanguagesEnum2["ky"] = "\u67EF\u5C14\u514B\u5B5C\u8BED";
+  LanguagesEnum2["la"] = "\u8001\u631D\u8BED";
+  LanguagesEnum2["lb"] = "\u5362\u68EE\u5821\u8BED";
+  LanguagesEnum2["lo"] = "\u8001\u631D\u8BED";
+  LanguagesEnum2["lt"] = "\u7ACB\u9676\u5B9B\u8BED";
+  LanguagesEnum2["lv"] = "\u62C9\u8131\u7EF4\u4E9A\u8BED";
+  LanguagesEnum2["mg"] = "\u9A6C\u5C14\u52A0\u4EC0\u8BED";
+  LanguagesEnum2["mi"] = "\u6BDB\u5229\u8BED";
+  LanguagesEnum2["mk"] = "\u9A6C\u5176\u987F\u8BED";
+  LanguagesEnum2["ml"] = "\u9A6C\u62C9\u96C5\u62C9\u59C6\u8BED";
+  LanguagesEnum2["mn"] = "\u8499\u53E4\u8BED";
+  LanguagesEnum2["mr"] = "\u9A6C\u62C9\u5730\u8BED";
+  LanguagesEnum2["ms"] = "\u9A6C\u6765\u8BED";
+  LanguagesEnum2["mt"] = "\u9A6C\u8033\u4ED6\u8BED";
+  LanguagesEnum2["mww"] = "\u767D\u82D7\u8BED";
+  LanguagesEnum2["my"] = "\u7F05\u7538\u8BED";
+  LanguagesEnum2["ne"] = "\u5C3C\u6CCA\u5C14\u8BED";
+  LanguagesEnum2["no"] = "\u632A\u5A01\u8BED";
+  LanguagesEnum2["ny"] = "\u9F50\u5207\u74E6\u8BED";
+  LanguagesEnum2["or"] = "\u5965\u91CC\u4E9A\u8BED";
+  LanguagesEnum2["otq"] = "\u514B\u96F7\u5854\u7F57\u5965\u6258\u7C73\u8BED";
+  LanguagesEnum2["pa"] = "\u65C1\u906E\u666E\u8BED";
+  LanguagesEnum2["ps"] = "\u666E\u4EC0\u56FE\u8BED";
+  LanguagesEnum2["ro"] = "\u7F57\u9A6C\u5C3C\u4E9A\u8BED";
+  LanguagesEnum2["rw"] = "\u5362\u65FA\u8FBE\u8BED";
+  LanguagesEnum2["sd"] = "\u4FE1\u5FB7\u8BED";
+  LanguagesEnum2["si"] = "\u50E7\u4F3D\u7F57\u8BED";
+  LanguagesEnum2["sk"] = "\u65AF\u6D1B\u4F10\u514B\u8BED";
+  LanguagesEnum2["sl"] = "\u65AF\u6D1B\u6587\u5C3C\u4E9A\u8BED";
+  LanguagesEnum2["sm"] = "\u8428\u6469\u4E9A\u8BED";
+  LanguagesEnum2["sn"] = "\u4FEE\u7EB3\u8BED";
+  LanguagesEnum2["so"] = "\u7D22\u9A6C\u91CC\u8BED";
+  LanguagesEnum2["sq"] = "\u963F\u5C14\u5DF4\u5C3C\u4E9A\u8BED";
+  LanguagesEnum2["sr"] = "\u585E\u5C14\u7EF4\u4E9A\u8BED";
+  LanguagesEnum2["sr-Cyrl"] = "\u585E\u5C14\u7EF4\u4E9A\u8BED-\u897F\u91CC\u5C14\u6587";
+  LanguagesEnum2["sr-Latn"] = "\u585E\u5C14\u7EF4\u4E9A\u8BED-\u62C9\u4E01\u6587";
+  LanguagesEnum2["st"] = "\u585E\u7D22\u6258\u8BED";
+  LanguagesEnum2["su"] = "\u5DFD\u4ED6\u8BED";
+  LanguagesEnum2["sv"] = "\u745E\u5178\u8BED";
+  LanguagesEnum2["sw"] = "\u65AF\u74E6\u5E0C\u91CC\u8BED";
+  LanguagesEnum2["ta"] = "\u6CF0\u7C73\u5C14\u8BED";
+  LanguagesEnum2["te"] = "\u6CF0\u5362\u56FA\u8BED";
+  LanguagesEnum2["tg"] = "\u5854\u5409\u514B\u8BED";
+  LanguagesEnum2["th"] = "\u6CF0\u8BED";
+  LanguagesEnum2["tk"] = "\u571F\u5E93\u66FC\u8BED";
+  LanguagesEnum2["tl"] = "\u83F2\u5F8B\u5BBE\u8BED";
+  LanguagesEnum2["tlh"] = "\u514B\u6797\u8D21\u8BED";
+  LanguagesEnum2["to"] = "\u6C64\u52A0\u8BED";
+  LanguagesEnum2["tr"] = "\u571F\u8033\u5176\u8BED";
+  LanguagesEnum2["tt"] = "\u9791\u977C\u8BED";
+  LanguagesEnum2["ty"] = "\u5854\u5E0C\u63D0\u8BED";
+  LanguagesEnum2["ug"] = "\u7EF4\u543E\u5C14\u8BED";
+  LanguagesEnum2["uk"] = "\u4E4C\u514B\u5170\u8BED";
+  LanguagesEnum2["ur"] = "\u4E4C\u5C14\u90FD\u8BED";
+  LanguagesEnum2["uz"] = "\u4E4C\u5179\u522B\u514B\u8BED";
+  LanguagesEnum2["vi"] = "\u8D8A\u5357\u8BED";
+  LanguagesEnum2["xh"] = "\u79D1\u8428\u8BED";
+  LanguagesEnum2["yi"] = "\u610F\u7B2C\u7EEA\u8BED";
+  LanguagesEnum2["yo"] = "\u7EA6\u9C81\u5DF4\u8BED";
+  LanguagesEnum2["yua"] = "\u5C24\u5361\u5766\u739B\u96C5\u8BED";
+  LanguagesEnum2["zu"] = "\u7956\u9C81\u8BED";
+})(LanguagesEnum || (LanguagesEnum = {}));
+var ServiceErrorEnum;
+(function(ServiceErrorEnum2) {
+  ServiceErrorEnum2["unknown"] = "\u672A\u77E5\u9519\u8BEF";
+  ServiceErrorEnum2["param"] = "\u53C2\u6570\u9519\u8BEF";
+  ServiceErrorEnum2["unsupportLanguage"] = "\u4E0D\u652F\u6301\u7684\u8BED\u79CD";
+  ServiceErrorEnum2["secretKey"] = "\u7F3A\u5C11\u79D8\u94A5";
+  ServiceErrorEnum2["network"] = "\u7F51\u7EDC\u5F02\u5E38\uFF0C\u7F51\u7EDC\u8BF7\u5931\u8D25";
+  ServiceErrorEnum2["api"] = "\u670D\u52A1\u63A5\u53E3\u5F02\u5E38";
+})(ServiceErrorEnum || (ServiceErrorEnum = {}));
+
 // src/entry.ts
 function translate(query) {
   if (query.detectFrom != "en") {
@@ -19504,7 +19504,7 @@ function getPhonetics($2, word) {
       value: usPhonetics,
       tts: {
         type: "url",
-        value: `https://dict.youdao.com/dictvoice?audio=${word}&type=2`
+        value: ttsSelector("us", word)
       }
     },
     {
@@ -19512,10 +19512,32 @@ function getPhonetics($2, word) {
       value: ukPhonetics,
       tts: {
         type: "url",
-        value: `https://dict.youdao.com/dictvoice?audio=${word}&type=1`
+        value: ttsSelector("uk", word)
       }
     }
   ];
+}
+function ttsSelector(type, word) {
+  const source = api.getOption("ttsType");
+  if (type == "us") {
+    switch (source) {
+      case "google":
+        return `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${word}}`;
+      case "youDao":
+        return `https://dict.youdao.com/dictvoice?audio=${word}&type=2`;
+      default:
+        return `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${word}}`;
+    }
+  } else if (type == "uk") {
+    switch (source) {
+      case "google":
+        return `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-uk&q=${word}`;
+      case "youDao":
+        return `https://dict.youdao.com/dictvoice?audio=${word}&type=1`;
+      default:
+        return `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-uk&q=${word}`;
+    }
+  }
 }
 function parseResult(query, data2) {
   const $2 = load(data2);
