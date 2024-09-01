@@ -72,8 +72,8 @@ function getAdditions($) {
 }
 
 function getPhonetics($: CheerioAPI, word: string) {
-    const usPhonetics = $('html > body > div > div > div:first-child > div:first-child > div:first-child > div:first-child > div > div:first-child > span > h3').text()
-    const ukPhonetics = $('html > body > div > div > div:first-child > div:first-child > div:first-child > div:first-child > div > div:nth-child(2) > span > h3').text()
+    const usPhonetics = $('body > div > div > div.definitionsContainer > div.definition-columns > div.col-1 > div:nth-child(4) > div.videos > div:nth-child(1) > span').text()
+    const ukPhonetics = $('body > div > div > div.definitionsContainer > div.definition-columns > div.col-1 > div:nth-child(4) > div.videos > div:nth-child(2) > span').text()
     return [
         {
             type: "us",
@@ -139,6 +139,7 @@ function parseResult(query, data) {
         }
     }
 }
+
 function supportLanguages() {
     return ['auto', 'en', 'zh-Hans'];
 }
