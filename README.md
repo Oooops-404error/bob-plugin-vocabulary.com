@@ -1,7 +1,7 @@
 <br />
 <h1>
 <p align="center">
-  <img src="https://cdn.vocab.com/images/logo-sar2cf.svg" alt="Logo" width="500">
+  <img src="https://cdn.vocabulary.com/images/header/logo-1wobq9i.png" alt="Logo" width="500">
   <br>bob-plugin-vocabulary.com
 </h1>
 <p align="center">
