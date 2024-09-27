@@ -72,8 +72,10 @@ function getAdditions($) {
 }
 
 function getPhonetics($: CheerioAPI, word: string) {
-    const usPhonetics = $('body > div > div > div.definitionsContainer > div.definition-columns > div.col-1 > div:nth-child(4) > div.videos > div:nth-child(1) > span').text()
-    const ukPhonetics = $('body > div > div > div.definitionsContainer > div.definition-columns > div.col-1 > div:nth-child(4) > div.videos > div:nth-child(2) > span').text()
+    const usPhonetics = $('body > div > div > div.definitionsContainer > div.definition-columns > div.col-1 > div:nth-child(4) > div.videos > div:nth-child(1) > span').text().trim()
+        || $('body > div > div > div.definitionsContainer > div.definition-columns > div.col-1 > div.word-area > div.ipa-section > div:nth-child(1) > span').text().trim()
+    const ukPhonetics = $('body > div > div > div.definitionsContainer > div.definition-columns > div.col-1 > div:nth-child(4) > div.videos > div:nth-child(2) > span').text().trim()
+        || $('body > div > div > div.definitionsContainer > div.definition-columns > div.col-1 > div.word-area > div.ipa-section > div:nth-child(2) > span').text().trim()
     return [
         {
             type: "us",
@@ -100,7 +102,7 @@ function ttsSelector(type: string, word: string) {
     if (type == "us") {
         switch (source) {
             case "google":
-                return `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${word}}`;
+                return `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-US&q=${word}}`;
             case "youDao":
                 return `https://dict.youdao.com/dictvoice?audio=${word}&type=2`;
             default:
@@ -109,7 +111,7 @@ function ttsSelector(type: string, word: string) {
     }else if (type == "uk"){
         switch (source) {
             case "google":
-                return `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-uk&q=${word}`;
+                return `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-UK&q=${word}`;
             case "youDao":
                 return `https://dict.youdao.com/dictvoice?audio=${word}&type=1`;
             default:

@@ -19496,8 +19496,8 @@ function getAdditions($2) {
   }];
 }
 function getPhonetics($2, word) {
-  const usPhonetics = $2("body > div > div > div.definitionsContainer > div.definition-columns > div.col-1 > div:nth-child(4) > div.videos > div:nth-child(1) > span").text();
-  const ukPhonetics = $2("body > div > div > div.definitionsContainer > div.definition-columns > div.col-1 > div:nth-child(4) > div.videos > div:nth-child(2) > span").text();
+  const usPhonetics = $2("body > div > div > div.definitionsContainer > div.definition-columns > div.col-1 > div:nth-child(4) > div.videos > div:nth-child(1) > span").text().trim() || $2("body > div > div > div.definitionsContainer > div.definition-columns > div.col-1 > div.word-area > div.ipa-section > div:nth-child(1) > span").text().trim();
+  const ukPhonetics = $2("body > div > div > div.definitionsContainer > div.definition-columns > div.col-1 > div:nth-child(4) > div.videos > div:nth-child(2) > span").text().trim() || $2("body > div > div > div.definitionsContainer > div.definition-columns > div.col-1 > div.word-area > div.ipa-section > div:nth-child(2) > span").text().trim();
   return [
     {
       type: "us",
