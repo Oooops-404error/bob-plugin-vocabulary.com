@@ -19522,7 +19522,7 @@ function ttsSelector(type, word) {
   if (type == "us") {
     switch (source) {
       case "google":
-        return `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${word}}`;
+        return `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-US&q=${word}}`;
       case "youDao":
         return `https://dict.youdao.com/dictvoice?audio=${word}&type=2`;
       default:
@@ -19531,7 +19531,7 @@ function ttsSelector(type, word) {
   } else if (type == "uk") {
     switch (source) {
       case "google":
-        return `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-uk&q=${word}`;
+        return `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-UK&q=${word}`;
       case "youDao":
         return `https://dict.youdao.com/dictvoice?audio=${word}&type=1`;
       default:
